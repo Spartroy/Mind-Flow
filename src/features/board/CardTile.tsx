@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils'
 import { formatMinutes, type MoveDir } from './logic'
 import type { Card, Tag } from './types'
 
+// Module-level on purpose: a fresh object each render makes dnd-kit re-run its effect forever.
+const SORT_TRANSITION = { duration: 220, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' }
+
 export function TagChip({ tag }: { tag: Tag }) {
   const c = `var(--tag-${(tag.color_index % 8) + 1})`
   return (
@@ -37,7 +40,12 @@ interface Props {
 
 export function CardTile({ card, tags, linkCount, onOpen, onKeyMove, overlay, loggedMin = 0, showPlay, running, onPlay }: Props) {
   const { t } = useTranslation()
-  const sortable = useSortable({ id: card.id, data: { type: 'card' }, disabled: overlay })
+  const sortable = useSortable({
+    id: card.id,
+    data: { type: 'card' },
+    disabled: overlay,
+    transition: SORT_TRANSITION,
+  })
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable
   const over = card.estimate_min != null && loggedMin > card.estimate_min
 
@@ -55,16 +63,21 @@ export function CardTile({ card, tags, linkCount, onOpen, onKeyMove, overlay, lo
     }
     listeners?.onKeyDown?.(e)
   }
+  // Mouse and touch start from anywhere on the tile; buttons inside still click because dragging needs movement first.
+  const { onMouseDown, onTouchStart } = (listeners ?? {}) as Record<string, ((e: never) => void) | undefined>
 
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
+      onMouseDown={onMouseDown as never}
+      onTouchStart={onTouchStart as never}
       className={cn(
         'rounded-card border-[1.5px] bg-surface p-3 shadow-[var(--shadow-raised)]',
         running ? 'border-primary' : 'border-border',
-        isDragging && 'opacity-40',
-        overlay && 'shadow-[var(--shadow-floating)]',
+        'cursor-grab touch-manipulation select-none',
+        isDragging && 'border-dashed opacity-35',
+        overlay && 'rotate-2 scale-[1.03] cursor-grabbing shadow-[var(--shadow-floating)]',
       )}
     >
       <div className="flex items-start gap-2">
@@ -75,7 +88,6 @@ export function CardTile({ card, tags, linkCount, onOpen, onKeyMove, overlay, lo
           className="mt-0.5 cursor-grab rounded text-muted touch-none"
           data-handle={card.id}
           {...attributes}
-          {...listeners}
           onKeyDown={onKeyDown}
         >
           <GripVertical size={16} strokeWidth={2} aria-hidden />
