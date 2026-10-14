@@ -57,11 +57,14 @@ export function FloatHost() {
   }, [pip.win, set])
 
   // No session (finished elsewhere, or none): nothing to float.
+  // Short grace period: the window may be opened in the same click that starts the session, a moment before it exists.
   useEffect(() => {
-    if (!v.session) {
+    if (v.session || (!pip.win && !wanted)) return
+    const id = setTimeout(() => {
       if (pip.win) pipClose()
-      if (wanted) set({ wanted: false })
-    }
+      set({ wanted: false })
+    }, 3000)
+    return () => clearTimeout(id)
   }, [v.session, pip.win, pipClose, wanted, set])
 
   if (!v.session || !v.card) return null

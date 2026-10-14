@@ -1,8 +1,9 @@
 import { supabase, supabaseConfigured } from '@/lib/supabase'
 import * as ops from '@/features/timer/sessionOps'
 import { diffLinks } from './links'
-import { emptyBoard, type BoardData, type BoardRepo, type CardLink, type MapNode, type MindMap, type TimeSession } from './types'
+import { emptyBoard, type BoardData, type BoardRepo, defaultSettings, type CardLink, type MapNode, type MindMap, type Settings, type TimeSession } from './types'
 
+const SETTINGS_COLS = 'locale,theme,week_start,default_estimate_min,pomodoro_focus_min,pomodoro_break_min,auto_float_timer,overtime_message,sound'
 const SESSION_COLS = 'id,card_id,started_at,ended_at,paused_at,paused_total_sec,mode,on_break,breaks_taken,estimate_snapshot_min'
 
 /** Session rpc results: a composite with no matching row comes back as null or an all-null object. */
@@ -14,7 +15,7 @@ const asSession = (data: unknown): TimeSession | null => {
 /** user_id is filled by the database default (auth.uid()), and enforced by RLS. */
 const supabaseRepo: BoardRepo = {
   async load() {
-    const [columns, cards, tags, cardTags, links, sessions, maps, mapNodes] = await Promise.all([
+    const [columns, cards, tags, cardTags, links, sessions, maps, mapNodes, settings] = await Promise.all([
       supabase.from('columns').select('id,name,color,position'),
       supabase
         .from('cards')
@@ -26,8 +27,9 @@ const supabaseRepo: BoardRepo = {
       supabase.from('time_sessions').select(SESSION_COLS).order('started_at'),
       supabase.from('mind_maps').select('id,name,scope'),
       supabase.from('map_nodes').select('id,map_id,card_id,x,y,label'),
+      supabase.from('settings').select(SETTINGS_COLS).maybeSingle(),
     ])
-    for (const r of [columns, cards, tags, cardTags, links, sessions, maps, mapNodes]) if (r.error) throw r.error
+    for (const r of [columns, cards, tags, cardTags, links, sessions, maps, mapNodes, settings]) if (r.error) throw r.error
     return {
       columns: columns.data ?? [],
       cards: cards.data ?? [],
@@ -37,6 +39,7 @@ const supabaseRepo: BoardRepo = {
       sessions: (sessions.data ?? []) as TimeSession[],
       maps: (maps.data ?? []) as MindMap[],
       mapNodes: (mapNodes.data ?? []) as MapNode[],
+      settings: { ...defaultSettings, ...((settings.data ?? {}) as Partial<Settings>) },
     }
   },
   async createColumn(c) {
@@ -65,6 +68,34 @@ const supabaseRepo: BoardRepo = {
   },
   async createTag(t) {
     const { error } = await supabase.from('tags').insert(t)
+    if (error) throw error
+  },
+  async saveSettings(patch) {
+    const { data, error: authError } = await supabase.auth.getUser()
+    if (authError || !data.user) throw authError ?? new Error('Not signed in')
+    const { error } = await supabase.from('settings').upsert({ user_id: data.user.id, ...patch })
+    if (error) throw error
+  },
+  async importAll(b) {
+    // Parents before children so every foreign key resolves; merge by id.
+    const put = async (table: string, rows: unknown[]) => {
+      if (!rows.length) return
+      const { error } = await supabase.from(table).upsert(rows as never[])
+      if (error) throw new Error(`${table}: ${error.message}`)
+    }
+    await put('columns', b.columns)
+    await put('tags', b.tags)
+    await put('cards', b.cards)
+    await put('card_tags', b.cardTags)
+    await put('card_links', b.links)
+    await put('time_sessions', b.sessions)
+    await put('mind_maps', b.maps)
+    await put('map_nodes', b.mapNodes)
+    if (b.settings) await supabaseRepo.saveSettings(b.settings)
+  },
+  async deleteAllCards() {
+    // Links, tags, sessions and map placements go with the cards (ON DELETE CASCADE).
+    const { error } = await supabase.from('cards').delete().not('id', 'is', null)
     if (error) throw error
   },
   async createLink(l) {
@@ -173,6 +204,27 @@ function rawMemoryRepo(db: BoardData): BoardRepo {
       db.links = db.links.filter((l) => l.from_card_id !== id && l.to_card_id !== id)
       db.sessions = db.sessions.filter((s) => s.card_id !== id)
       db.mapNodes = db.mapNodes.filter((n) => n.card_id !== id)
+    },
+    saveSettings: async (patch) => void (db.settings = { ...db.settings, ...patch }),
+    importAll: async (b) => {
+      const merge = <T extends { id: string }>(cur: T[], add: T[]) => [...cur.filter((x) => !add.some((y) => y.id === x.id)), ...add]
+      db.columns = merge(db.columns, b.columns)
+      db.tags = merge(db.tags, b.tags)
+      db.cards = merge(db.cards, b.cards)
+      const tagKey = (x: { card_id: string; tag_id: string }) => x.card_id + '|' + x.tag_id
+      db.cardTags = [...db.cardTags.filter((x) => !b.cardTags.some((y) => tagKey(y) === tagKey(x))), ...b.cardTags]
+      db.links = merge(db.links, b.links)
+      db.sessions = merge(db.sessions, b.sessions)
+      db.maps = merge(db.maps, b.maps)
+      db.mapNodes = merge(db.mapNodes, b.mapNodes)
+      if (b.settings) db.settings = { ...db.settings, ...b.settings }
+    },
+    deleteAllCards: async () => {
+      db.cards = []
+      db.cardTags = []
+      db.links = []
+      db.sessions = []
+      db.mapNodes = []
     },
     createLink: async (l) => void db.links.push(l),
     updateLinkKind: async (id, kind) => void Object.assign(db.links.find((l) => l.id === id) ?? {}, { kind }),

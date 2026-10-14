@@ -99,3 +99,10 @@ export function filterCards(cards: Card[], cardTags: CardTag[], f: Filter): Card
 }
 
 export const formatMinutes = (m: number) => (m < 60 ? `${m}m` : m % 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m / 60}h`)
+
+/** Key for putting a column at `index` among the other columns (no renumbering). */
+export function columnPositionAt(columns: Column[], columnId: string, index: number): string {
+  const others = sorted(columns).filter((c) => c.id !== columnId)
+  const i = Math.max(0, Math.min(index, others.length))
+  return generateKeyBetween(others[i - 1]?.position ?? null, others[i]?.position ?? null)
+}

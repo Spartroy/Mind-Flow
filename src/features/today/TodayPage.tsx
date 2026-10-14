@@ -8,7 +8,8 @@ import { useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { TagChip } from '@/features/board/CardTile'
-import { useBoard, useBoardActions } from '@/features/board/hooks'
+import { useBoard, useBoardActions, useSettings } from '@/features/board/hooks'
+import { autoFloat } from '@/features/timer/floatStore'
 import type { BoardData, Card } from '@/features/board/types'
 import { useNow } from '@/features/timer/clock'
 import { activeSession, formatDuration, loggedSec } from '@/features/timer/core'
@@ -20,6 +21,7 @@ export function TodayPage() {
   const { t, i18n } = useTranslation()
   const { data } = useBoard()
   const act = useBoardActions()
+  const settings = useSettings()
   const now = useNow(15_000)
   const [error, setError] = useState<string | null>(null)
   const [announce, setAnnounce] = useState('')
@@ -56,6 +58,7 @@ export function TodayPage() {
   }
 
   function blitzNow() {
+    autoFloat(settings.auto_float_timer)
     if (active) navigate('#/blitz')
     else if (next) navigate(`#/blitz/${encodeURIComponent(next.id)}`)
   }

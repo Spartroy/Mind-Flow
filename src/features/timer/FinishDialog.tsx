@@ -2,7 +2,8 @@ import { Check } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { useBoard, useBoardActions } from '@/features/board/hooks'
+import { useBoard, useBoardActions, useSettings } from '@/features/board/hooks'
+import { chime } from './chime'
 import { sorted } from '@/features/board/logic'
 import type { TimeSession } from '@/features/board/types'
 import { isDone, nextUp, todayCards, doneColumn } from '@/features/today/logic'
@@ -31,8 +32,12 @@ function FinishDialog({ session }: { session: TimeSession }) {
   const [target, setTarget] = useState(card && done && card.column_id !== done.id ? done.id : '')
   const [error, setError] = useState<string | null>(null)
 
+  const sound = useSettings().sound
   useEffect(() => {
     ref.current?.showModal()
+    if (sound) chime()
+    // once per finished session
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const spent = elapsedSec(session, Date.parse(session.ended_at ?? session.started_at))

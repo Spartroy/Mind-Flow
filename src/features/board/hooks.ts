@@ -5,7 +5,7 @@ import { keyAfter, planMove, sorted } from './logic'
 import { repo } from './repo'
 import { doneColumn, todayPositionAt } from '@/features/today/logic'
 import * as ops from '@/features/timer/sessionOps'
-import type { BoardData, Card, CardLink, Column, LinkKind, MapNode, MindMap, SessionMode, Tag, TimeSession } from './types'
+import { defaultSettings, type BoardData, type Card, type CardLink, type Column, type LinkKind, type MapNode, type MindMap, type SessionMode, type Settings, type Tag, type TimeSession } from './types'
 
 const KEY = ['board'] as const
 
@@ -126,6 +126,19 @@ export function useBoardActions() {
     )
   }
 
+  const updateSettings = (patch: Partial<Settings>) =>
+    run((d) => ({ ...d, settings: { ...d.settings, ...patch } }), () => repo.saveSettings(patch))
+
+  /** Import a backup, then reload everything from the store. */
+  const importBackup = async (b: Parameters<typeof repo.importAll>[0]) => {
+    await repo.importAll(b)
+    await qc.invalidateQueries({ queryKey: KEY })
+  }
+  const deleteAllCards = async () => {
+    await repo.deleteAllCards()
+    await qc.invalidateQueries({ queryKey: KEY })
+  }
+
   // ---- links and the mind map
   /** Manual or parent link between two cards (text links come from the note, see saveBody). */
   const addLink = (from: string, to: string, kind: LinkKind = 'manual') => {
@@ -196,7 +209,8 @@ export function useBoardActions() {
 
   const startSession = async (cardId: string, mode: SessionMode = 'timer') => {
     const card = qc.getQueryData<BoardData>(KEY)?.cards.find((c) => c.id === cardId)
-    const row = await repo.startSession(cardId, mode, card?.estimate_min ?? null)
+    const fallback = qc.getQueryData<BoardData>(KEY)?.settings.default_estimate_min ?? null
+    const row = await repo.startSession(cardId, mode, card?.estimate_min ?? fallback)
     qc.setQueryData<BoardData>(KEY, (d) => {
       if (!d) return d
       // The server finished any other running session at this instant; mirror that locally.
@@ -224,7 +238,9 @@ export function useBoardActions() {
       () => repo.setCardTags(cardId, tagIds),
     )
 
-  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags, saveBody, snapshot: () => qc.getQueryData<BoardData>(KEY), addLink, setLinkKind, removeLinks, saveMapNode, removeMapNode, setToday, moveToday, setDone, startSession, pauseSession, resumeSession, extendSession, finishSession, setSessionMode }
+  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags, saveBody, snapshot: () => qc.getQueryData<BoardData>(KEY), updateSettings, importBackup, deleteAllCards, addLink, setLinkKind, removeLinks, saveMapNode, removeMapNode, setToday, moveToday, setDone, startSession, pauseSession, resumeSession, extendSession, finishSession, setSessionMode }
 }
+
+export const useSettings = () => useBoard().data?.settings ?? defaultSettings
 
 export const orderedColumns = (d: BoardData) => sorted(d.columns)

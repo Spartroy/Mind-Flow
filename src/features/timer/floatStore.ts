@@ -4,6 +4,11 @@ import { create } from 'zustand'
  * Bridge between buttons (which have the user gesture Document PiP needs) and the host that owns
  * the PiP window. `open` must be called synchronously from a click handler.
  */
+/** Call from the click that starts a Blitz: opens the floating timer when the user asked for that in Settings. */
+export const autoFloat = (enabled: boolean) => {
+  if (enabled) useFloat.getState().open?.()
+}
+
 export const useFloat = create<{
   wanted: boolean
   refused: boolean

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useNow } from '@/features/timer/clock'
+import { autoFloat } from '@/features/timer/floatStore'
 import { activeSession, formatDuration, loggedSec } from '@/features/timer/core'
 import { nextUp, todayCards } from '@/features/today/logic'
 import { QueuePanel, TodayLane, ViewToggle } from './BlitzViews'
@@ -18,7 +19,7 @@ import { cardHref, navigate } from '@/lib/router'
 import { buildLists, committed, findContainer, moveInLists, type Lists } from './dragLists'
 import { FilterBar } from './FilterBar'
 import { useFilter } from './filterStore'
-import { orderedColumns, useBoard, useBoardActions } from './hooks'
+import { orderedColumns, useBoard, useBoardActions, useSettings } from './hooks'
 import { cardsIn, filterCards, planKeyboardMove, type MoveDir } from './logic'
 import { useBoardView } from './viewStore'
 
@@ -39,6 +40,7 @@ export function Board() {
   const { t, i18n } = useTranslation()
   const { data, isPending, error: loadError } = useBoard()
   const act = useBoardActions()
+  const settings = useSettings()
   const { filter, setFilter } = useFilter()
   const [dragId, setDragId] = useState<string | null>(null)
   /** Live column lists while a card is being dragged: cards slide apart as you move. */
@@ -173,7 +175,10 @@ export function Board() {
   const todayList = todayCards(data.cards)
   const upNext = nextUp(todayList, data.columns)
   const dateLabel = new Intl.DateTimeFormat(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' }).format(now)
-  const startFromBoard = (id: string) => safe(act.startSession(id))
+  const startFromBoard = (id: string) => {
+    autoFloat(settings.auto_float_timer)
+    safe(act.startSession(id))
+  }
   const columnSummary = (colId: string) => {
     const min = cardsIn(data.cards, colId).reduce((n, c) => n + (c.estimate_min ?? 0), 0)
     return min > 0 ? formatDuration(min) : undefined
@@ -278,7 +283,11 @@ export function Board() {
                   now={now}
                   dateLabel={dateLabel}
                   canStart={upNext !== undefined || running !== undefined}
-                  onStart={() => (running ? navigate('#/blitz') : upNext && navigate('#/blitz/' + encodeURIComponent(upNext.id)))}
+                  onStart={() => {
+                    autoFloat(settings.auto_float_timer)
+                    if (running) navigate('#/blitz')
+                    else if (upNext) navigate('#/blitz/' + encodeURIComponent(upNext.id))
+                  }}
                   onOpen={(id) => navigate(cardHref(id))}
                 />
               )}

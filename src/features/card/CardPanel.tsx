@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { TagChip } from '@/features/board/CardTile'
-import { useBoard, useBoardActions } from '@/features/board/hooks'
+import { useBoard, useBoardActions, useSettings } from '@/features/board/hooks'
+import { autoFloat } from '@/features/timer/floatStore'
 import { refreshWikiTitles } from '@/features/board/links'
 import { normalize, sorted } from '@/features/board/logic'
 import type { BoardData, Card } from '@/features/board/types'
@@ -38,6 +39,7 @@ export function CardPanel({ id, page }: { id: string; page: boolean }) {
 function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: boolean }) {
   const { t, i18n } = useTranslation()
   const act = useBoardActions()
+  const settings = useSettings()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [dirMode, setDirMode] = useState<DirMode>('auto')
@@ -140,7 +142,12 @@ function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: bo
           <Button variant={card.is_today ? 'sun' : 'outline'} aria-pressed={card.is_today} onClick={() => report(act.setToday(card.id, !card.is_today))}>
             <Sun {...icon} /> {t('panel.today')}
           </Button>
-          <Button onClick={() => navigate(`#/blitz/${encodeURIComponent(card.id)}`)}>
+          <Button
+            onClick={() => {
+              autoFloat(settings.auto_float_timer)
+              navigate(`#/blitz/${encodeURIComponent(card.id)}`)
+            }}
+          >
             <Timer {...icon} /> {t('panel.blitz')}
           </Button>
           <details className="relative">

@@ -3,13 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { TagChip } from '@/features/board/CardTile'
-import { useBoardActions } from '@/features/board/hooks'
+import { useBoardActions, useSettings } from '@/features/board/hooks'
 import type { BoardData, Card, SessionMode, TimeSession } from '@/features/board/types'
 import { useNoteDraft } from '@/features/card/useNoteDraft'
 import { EditorToolbar } from '@/features/card/EditorToolbar'
 import { MarkdownEditor, type DirMode } from '@/features/editor/MarkdownEditor'
 import { breakRemainingSec, formatClock, pomodoro } from '@/features/timer/core'
-import { OVERTIME_MESSAGE, POMODORO_BREAK_MIN, POMODORO_FOCUS_MIN } from '@/features/timer/config'
+import { chime } from '@/features/timer/chime'
 import { useFloat } from '@/features/timer/floatStore'
 import { Ring } from '@/features/timer/Ring'
 import { useActiveView } from '@/features/timer/useActiveView'
@@ -67,10 +67,13 @@ function BlitzScreen({ session, card, data, elapsed, now, estimateMin }: ScreenP
   const { t } = useTranslation()
   const act = useBoardActions()
   const finish = useFinishFlow()
+  const settings = useSettings()
+  const focusMin = settings.pomodoro_focus_min
+  const breakMin = settings.pomodoro_break_min
   const openFloat = useFloat((s) => s.open)
   const paused = session.paused_at !== null
   const mode = session.mode
-  const pomo = pomodoro(session, elapsed, POMODORO_FOCUS_MIN)
+  const pomo = pomodoro(session, elapsed, focusMin)
   const [breakExtra, setBreakExtra] = useState({ for: session.breaks_taken, sec: 0 })
   const extraSec = breakExtra.for === session.breaks_taken ? breakExtra.sec : 0
   const tags = data.cardTags.filter((x) => x.card_id === card.id).flatMap((x) => data.tags.find((tg) => tg.id === x.tag_id) ?? [])
@@ -81,9 +84,10 @@ function BlitzScreen({ session, card, data, elapsed, now, estimateMin }: ScreenP
     const key = `${session.id}:${session.breaks_taken}`
     if (mode === 'pomodoro' && pomo.breakDue && breakStarted.current !== key) {
       breakStarted.current = key
+      if (settings.sound) chime()
       void act.pauseSession(true)
     }
-  }, [mode, pomo.breakDue, session.id, session.breaks_taken, act])
+  }, [mode, pomo.breakDue, session.id, session.breaks_taken, act, settings.sound])
 
   // Space pauses/resumes, but never while typing; Esc leaves in writing-only mode.
   useEffect(() => {
@@ -145,14 +149,14 @@ function BlitzScreen({ session, card, data, elapsed, now, estimateMin }: ScreenP
     <div className="flex min-h-screen flex-col bg-bg">
       {topBar}
       {onBreak ? (
-        <BreakCard session={session} card={card} now={now} extraSec={extraSec} onExtra={() => setBreakExtra({ for: session.breaks_taken, sec: extraSec + 120 })} onResume={() => void act.resumeSession()} />
+        <BreakCard session={session} card={card} now={now} breakMin={breakMin} sound={settings.sound} extraSec={extraSec} onExtra={() => setBreakExtra({ for: session.breaks_taken, sec: extraSec + 120 })} onResume={() => void act.resumeSession()} />
       ) : (
         <div className="mx-auto grid w-full max-w-5xl flex-1 gap-5 p-5 pt-0 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
           <section className="h-fit rounded-[28px] border-[1.5px] border-border bg-surface p-6 text-center shadow-[var(--shadow-raised)]">
             <div className="flex flex-wrap justify-center gap-1.5">{tags.map((tag) => <TagChip key={tag.id} tag={tag} />)}</div>
             <h1 dir="auto" className="mt-3 text-2xl font-extrabold">{card.title || t('nav.untitled')}</h1>
-            <TimerFace mode={mode} session={session} elapsed={elapsed} estimateMin={estimateMin} pomoRemaining={pomo.blockRemainingSec} paused={paused} />
-            {overtime && OVERTIME_MESSAGE && (
+            <TimerFace mode={mode} session={session} elapsed={elapsed} estimateMin={estimateMin} pomoRemaining={pomo.blockRemainingSec} paused={paused} focusMin={focusMin} />
+            {overtime && settings.overtime_message && (
               <p role="status" dir="auto" className="mt-4 flex items-start gap-2 rounded-control bg-coral-soft p-3 text-start text-sm font-semibold text-fg">
                 <span className="mt-1.5 size-2 shrink-0 rounded-full bg-coral" aria-hidden />
                 {t('blitz.overtimeMsg')}
@@ -182,8 +186,8 @@ function BlitzScreen({ session, card, data, elapsed, now, estimateMin }: ScreenP
   )
 }
 
-function TimerFace({ mode, session, elapsed, estimateMin, pomoRemaining, paused }: {
-  mode: SessionMode; session: TimeSession; elapsed: number; estimateMin: number | null; pomoRemaining: number; paused: boolean
+function TimerFace({ mode, session, elapsed, estimateMin, pomoRemaining, paused, focusMin }: {
+  mode: SessionMode; session: TimeSession; elapsed: number; estimateMin: number | null; pomoRemaining: number; paused: boolean; focusMin: number
 }) {
   const { t } = useTranslation()
   let main: string
@@ -191,7 +195,7 @@ function TimerFace({ mode, session, elapsed, estimateMin, pomoRemaining, paused 
   let fraction = 0
   let tone: 'primary' | 'coral' = 'primary'
   if (mode === 'pomodoro') {
-    const total = POMODORO_FOCUS_MIN * 60
+    const total = focusMin * 60
     main = formatClock(Math.max(0, pomoRemaining))
     sub = t('blitz.pomodoroBlock', { n: session.breaks_taken + 1 }) + ` · ${formatClock(total)}`
     fraction = 1 - Math.max(0, pomoRemaining) / total
@@ -225,12 +229,21 @@ function TimerFace({ mode, session, elapsed, estimateMin, pomoRemaining, paused 
   )
 }
 
-function BreakCard({ session, card, now, extraSec, onExtra, onResume }: {
-  session: TimeSession; card: Card; now: number; extraSec: number; onExtra: () => void; onResume: () => void
+function BreakCard({ session, card, now, breakMin, sound, extraSec, onExtra, onResume }: {
+  session: TimeSession; card: Card; now: number; breakMin: number; sound: boolean; extraSec: number; onExtra: () => void; onResume: () => void
 }) {
   const { t } = useTranslation()
-  const remaining = breakRemainingSec(session, POMODORO_BREAK_MIN, extraSec, now)
+  const remaining = breakRemainingSec(session, breakMin, extraSec, now)
   const over = remaining <= 0
+  // One soft chime when the break runs out (not on every re-render).
+  const chimed = useRef(false)
+  useEffect(() => {
+    if (over && sound && !chimed.current) {
+      chimed.current = true
+      chime()
+    }
+    if (!over) chimed.current = false
+  }, [over, sound])
   const tips = [
     { icon: Activity, k: 'stretch', tint: 'bg-[#dbeeff] text-[#1f6fbf]' },
     { icon: Droplet, k: 'water', tint: 'bg-primary-soft text-primary' },

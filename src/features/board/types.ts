@@ -72,6 +72,31 @@ export interface MapNode {
   label: string | null
 }
 
+/** Mirrors the `settings` table (one row per user). */
+export interface Settings {
+  locale: 'en' | 'ar'
+  theme: 'system' | 'light' | 'dark'
+  week_start: number // 0 = Sunday .. 6 = Saturday
+  default_estimate_min: number
+  pomodoro_focus_min: number
+  pomodoro_break_min: number
+  auto_float_timer: boolean
+  overtime_message: boolean
+  sound: boolean
+}
+
+export const defaultSettings: Settings = {
+  locale: 'en',
+  theme: 'system',
+  week_start: 0,
+  default_estimate_min: 25,
+  pomodoro_focus_min: 25,
+  pomodoro_break_min: 5,
+  auto_float_timer: false,
+  overtime_message: true,
+  sound: false,
+}
+
 export interface BoardData {
   columns: Column[]
   cards: Card[]
@@ -81,6 +106,7 @@ export interface BoardData {
   sessions: TimeSession[]
   maps: MindMap[]
   mapNodes: MapNode[]
+  settings: Settings
 }
 
 /** Storage boundary. Supabase in production, in-memory when Supabase is not configured. */
@@ -96,6 +122,10 @@ export interface BoardRepo {
   setCardTags(cardId: string, tagIds: string[]): Promise<void>
   /** Make the wikilink rows from this card equal exactly toIds. */
   syncWikiLinks(fromId: string, toIds: string[]): Promise<void>
+  saveSettings(patch: Partial<Settings>): Promise<void>
+  /** Replace everything the user owns with a backup (merge by id; see backup.ts). */
+  importAll(data: Omit<BoardData, 'settings'> & { settings?: Settings }): Promise<void>
+  deleteAllCards(): Promise<void>
   createLink(l: CardLink): Promise<void>
   updateLinkKind(id: string, kind: LinkKind): Promise<void>
   deleteLink(id: string): Promise<void>
@@ -114,4 +144,4 @@ export interface BoardRepo {
   finishSession(): Promise<TimeSession | null>
 }
 
-export const emptyBoard = (): BoardData => ({ columns: [], cards: [], tags: [], cardTags: [], links: [], sessions: [], maps: [], mapNodes: [] })
+export const emptyBoard = (): BoardData => ({ columns: [], cards: [], tags: [], cardTags: [], links: [], sessions: [], maps: [], mapNodes: [], settings: { ...defaultSettings } })
