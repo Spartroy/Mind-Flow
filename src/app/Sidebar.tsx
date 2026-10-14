@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { PrefsBar } from '@/components/PrefsBar'
 import { Button } from '@/components/ui/button'
 import { useBoard, useBoardActions } from '@/features/board/hooks'
+import { quickCreateCard } from '@/features/board/quickCreate'
 import { useFilter } from '@/features/board/filterStore'
-import { sorted } from '@/features/board/logic'
 import { isDemo } from '@/features/board/repo'
 import { cardHref, navigate, type Route } from '@/lib/router'
 import { supabase } from '@/lib/supabase'
@@ -42,12 +42,7 @@ export function Sidebar({ route }: { route: Route }) {
 
   async function newCard() {
     if (!act.snapshot()) return
-    if (!act.snapshot()!.columns.length) {
-      await act.addStarterColumns(t('board.starter', { returnObjects: true }) as string[])
-    }
-    const first = sorted(act.snapshot()!.columns)[0]
-    if (!first) return
-    const { id, done } = act.addCard('', first.id)
+    const { id, done } = await quickCreateCard(act, t('board.starter', { returnObjects: true }) as string[], '')
     navigate(cardHref(id))
     await done
   }

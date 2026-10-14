@@ -47,3 +47,22 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* Command palette (cmdk) */
+.palette-overlay { position: fixed; inset: 0; z-index: 60; background: var(--scrim); }
+.palette {
+  position: fixed; z-index: 61; inset-inline: 0; margin-inline: auto; top: 12vh;
+  width: min(40rem, calc(100vw - 2rem));
+  background: var(--surface); color: var(--text);
+  border: 1.5px solid var(--border); border-radius: 20px;
+  box-shadow: var(--shadow-floating); overflow: hidden;
+}
+.palette-item {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-control); cursor: pointer; font-size: 14px;
+}
+.palette-item[data-selected='true'] { background: var(--primary-soft); color: var(--primary); }
+[cmdk-group-heading] {
+  padding: 0.6rem 0.6rem 0.25rem; font-size: 11px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+}

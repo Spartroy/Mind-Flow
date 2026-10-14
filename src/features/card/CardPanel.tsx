@@ -104,7 +104,10 @@ function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: bo
 
   // ---- dialog (side panel) behaviour
   useEffect(() => {
-    if (!page) dialogRef.current?.showModal()
+    if (page) return
+    dialogRef.current?.showModal()
+    // Start on the panel itself, not its first control, so single-key shortcuts (T, B) work straight away.
+    dialogRef.current?.focus()
   }, [page])
 
   const nowMs = useNow(30_000)
@@ -306,6 +309,8 @@ function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: bo
   return (
     <dialog
       ref={dialogRef}
+      data-card-panel
+      tabIndex={-1}
       aria-label={t('panel.label')}
       onClose={closeToBoard}
       className="fixed inset-y-0 start-auto end-0 m-0 h-dvh max-h-none w-[min(60vw,100vw)] max-w-none min-w-[min(40rem,100vw)] flex-col border-s-[1.5px] border-border bg-surface p-0 text-fg open:flex backdrop:bg-[var(--scrim)]"

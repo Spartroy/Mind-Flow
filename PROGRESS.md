@@ -151,5 +151,27 @@ Code: `src/features/timer/usePip.ts`, `pip.tsx`, dev page `/#/spike-pip`.
 - Not checked by hand: touch dragging on the map, keyboard-only linking (you can select and delete, but not create a link without a mouse), very large maps (performance with hundreds of nodes is untested).
 - Deleting a card removes its map placement (FK cascade).
 
+## Phase 5: Reports, command palette, settings, export and import
+
+**Done**
+- **Settings** (`/#/settings`): General (language, theme, week start), Focus (default estimate, Pomodoro length, short break, auto-start float timer, gentle overtime message, sound), Columns (drag or keyboard reorder, rename, change colour, add, delete with cards moved), Data, Shortcuts. All values save to the `settings` table (optimistic) and actually change behaviour: Pomodoro lengths and the overtime message in Blitz, the default estimate for cards without one when a session starts, the Reports week start, a soft chime (Web Audio) when a Pomodoro block ends, the break runs out, or a session is finished, and the floating timer opens on the click that starts a Blitz. Invalid numbers are rejected and reset. Account settings override device defaults once per load (not in demo mode).
+- **Export**: one zip, `backup.json` (every table: columns, cards incl. archived, tags, links, sessions, maps and positions, settings) plus `cards/<title>-<id>.md`, one Markdown file per live card with a small frontmatter (id, title, column, tags, estimate, today, due, dates) and the note exactly as stored. Arabic titles keep their letters in file names.
+- **Import**: accepts the zip, a `backup.json`, loose `.md` files, or a whole folder. Shows what it found and asks before importing.
+  - `backup.json`: restores everything by id (merge: same id replaced, nothing deleted). Any session that was still running in the backup is closed, so only one can ever run.
+  - Markdown: a card with a known id is updated, otherwise created; missing columns and tags are created by name; `[[links]]` in the notes are rebuilt. Plain `.md` files without frontmatter work (title from the first heading or file name).
+  - Tested without loss: export, import into an empty board, every table equal (12 tests). Also checked in the app: delete all, import the zip, 7 cards, 4 links, 6 sessions came back.
+- **Reports** (`/#/reports`): Day / Week / Month with previous/next, four KPIs (focus time with comparison to the previous period, cards finished, estimate accuracy, cards over estimate with the tag that runs long), focus time chart (hourly for a day, per day otherwise; the same data as a hidden table for screen readers), time by tag donut (a card with several tags splits its time), estimate vs actual table (difference turns coral when over by more than 10%), session log, empty state. 14 logic tests (ranges for every week start, month and year ends, buckets, tag split, running and paused sessions, previous period).
+- **Command palette** (Ctrl/Cmd+K, `/`, or the top search bar): recent cards when empty; card search with Arabic folding over titles and notes; actions on the highlighted card (Enter opens, Ctrl+Enter adds to Today, Shift+Enter starts Blitz); navigation and toggle actions; and "Create card: ..." quick capture when nothing matches (Enter creates, Ctrl+Enter creates and adds to Today).
+- **Shortcuts**: N new card, B start Blitz on the open card, T toggle Today on the open card, Ctrl+Shift+D switch language and direction. Single keys never fire while typing or inside another dialog.
+- Tests: 137 in total.
+
+**Stubbed / not done**
+- Search is client-side over loaded cards. The Postgres full-text and trigram indexes exist but the UI does not query them; to be measured with 2,000 cards in Phase 6.
+- "Cards finished" counts cards worked in the period that are now in the last column (there is no "finished at" timestamp).
+- Export is a zip, not a folder on disk (no File System Access API). Markdown import cannot restore sessions or map positions: use the JSON backup for those (the dialog says so).
+- Not run against real Supabase: `importAll` (bulk upserts per table), `deleteAllCards`, `saveSettings`.
+- Sound and the auto-opened floating window are not verified audibly/visually (the pane has no audio and refuses PiP).
+- The 4h day capacity is a constant (not a `settings` column). "Delete all cards" asks for one confirmation.
+
 ## Known issues
 - Production bundle is over 500 kB (no code splitting yet).

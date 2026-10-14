@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useBoard } from '@/features/board/hooks'
 import { isDemo } from '@/features/board/repo'
 import { usePrefs } from '@/lib/prefs'
@@ -11,16 +10,19 @@ import { FinishHost } from '@/features/timer/FinishDialog'
 import { FloatHost } from '@/features/timer/FloatHost'
 import { TimerDock } from '@/features/timer/TimerDock'
 import { MindMapPage } from '@/features/mindmap/MindMapPage'
+import { ReportsPage } from '@/features/reports/ReportsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { TodayPage } from '@/features/today/TodayPage'
 import { parseHash, useHash } from '@/lib/router'
-import { ComingSoon } from './ComingSoon'
+import { CommandPalette } from '@/features/palette/CommandPalette'
+import { useShortcuts } from '@/features/palette/useShortcuts'
 import { MobileNav, Sidebar } from './Sidebar'
+import { TopBar } from './TopBar'
 
 export function Shell() {
-  const { t } = useTranslation()
   const route = parseHash(useHash())
   useClockSync()
+  useShortcuts()
   // Settings saved in the account win over this device's defaults, once per load (not in demo mode).
   const { data: board } = useBoard()
   const appliedSettings = useRef(false)
@@ -35,6 +37,7 @@ export function Shell() {
     <>
       <FloatHost />
       <FinishHost />
+      <CommandPalette />
     </>
   )
   if (route.name === 'blitz') {
@@ -50,6 +53,7 @@ export function Shell() {
       <MobileNav route={route} />
       <Sidebar route={route} />
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        {!(route.name === 'card' && route.page) && <TopBar />}
         {route.name === 'card' && route.page ? (
           <CardPanel id={route.id} page />
         ) : route.name === 'board' || route.name === 'card' ? (
@@ -64,7 +68,7 @@ export function Shell() {
         ) : route.name === 'settings' ? (
           <SettingsPage />
         ) : (
-          <ComingSoon name={t(`nav.${route.name}`)} />
+          <ReportsPage />
         )}
         <TimerDock />
       </main>
