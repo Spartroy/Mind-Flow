@@ -45,5 +45,26 @@
 - Column colour is auto-assigned; no colour picker yet. Column reordering is not implemented.
 - Cannot delete the last column while it has cards.
 
+## Phase 2 spike: Arabic/English editing (Tiptap 3 + @tiptap/markdown)
+
+Code: `src/features/editor/` (`MarkdownEditor`, `dirAuto.ts`, `wikiLink.ts`, `editor.css`). Try it at `npm run dev` then `/#/spike` (dev only).
+
+**Works (checked in Chrome via the browser pane, plus 5 round-trip tests)**
+- Direction is chosen per block: Arabic paragraphs and headings right-align, English left-align, mixed ones follow their first strong character.
+- Typing mixed text keeps logical order. Caret: ArrowLeft in an Arabic paragraph advances logically; Shift+Arrow selects the right characters.
+- Bullets, numbers, checkboxes and the quote bar sit on the start side of each item's own direction. Enter in an Arabic list creates a new item that flips direction on its first strong character.
+- Auto / LTR / RTL switch works (CSS only: direction is a view preference and Markdown cannot store it).
+- Markdown round-trips: second pass is identical; Arabic, punctuation, digits, bold/italic, code, task lists unchanged.
+
+**Findings that changed the design**
+1. `dir="auto"` skips descendants that have their own `dir`, so a `ul`/`li`/`blockquote` containing `<p dir=auto>` always resolved LTR (bullets on the wrong side). Fix: `dir=auto` only on paragraph and heading; containers follow their first block with `li:has(> p:dir(rtl))`, and bullets/numbers are drawn with CSS grid markers.
+2. The Markdown serializer escapes `[[Title]]` to `\[\[Title\]\]`, which would break link parsing. Fix: `[[Title|id]]` is a `WikiLink` inline atom node with its own tokenizer/serializer (test covers it). This is also the right shape for the `[[` picker and rename-safe links.
+
+**Known limits, not fixed**
+- A brand-new empty list item after an Arabic item shows LTR until the first character is typed (caret and marker on the left for that moment).
+- Needs `:has()` and `:dir()`: Chrome 105+, Safari 15.4+, Firefox 121+.
+- Not tested: IME composition, mobile keyboards, Safari/Firefox, copy/paste of mixed text, tables.
+- Vite dev server once served a stale module after two quick edits; touching the file fixed it (dev-only).
+
 ## Known issues
 - Production bundle is over 500 kB (no code splitting yet).

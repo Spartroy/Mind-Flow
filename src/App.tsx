@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { AuthScreen } from '@/features/auth/AuthScreen'
 import { Board } from '@/features/board/Board'
 import { isDemo } from '@/features/board/repo'
+import { SpikePage } from '@/features/editor/SpikePage'
 import { supabase } from '@/lib/supabase'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
     return () => data.subscription.unsubscribe()
   }, [])
 
+  if (import.meta.env.DEV && location.hash === '#/spike') return <SpikePage />
   if (!ready) return null
   if (!isDemo && !session) {
     return (

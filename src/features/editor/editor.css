@@ -1,0 +1,93 @@
+/* Editor surface. Logical properties only. */
+.nf-editor .ProseMirror {
+  min-height: 12rem;
+  outline: none;
+  text-align: start;
+  line-height: 1.7;
+}
+.nf-editor .ProseMirror p,
+.nf-editor .ProseMirror h1,
+.nf-editor .ProseMirror h2,
+.nf-editor .ProseMirror h3 { text-align: start; }
+.nf-editor .ProseMirror h1 { font-size: 1.5rem; font-weight: 700; margin-block: 0.75rem 0.25rem; }
+.nf-editor .ProseMirror h2 { font-size: 1.25rem; font-weight: 700; margin-block: 0.75rem 0.25rem; }
+.nf-editor .ProseMirror h3 { font-size: 1.1rem; font-weight: 600; margin-block: 0.5rem 0.25rem; }
+.nf-editor .ProseMirror p { margin-block: 0.25rem; }
+
+/* Lists: markers are drawn here (grid) so they sit on the start side of each item's own
+   direction. An item takes the resolved direction of its first block via :has(:dir()). */
+.nf-editor .ProseMirror ul,
+.nf-editor .ProseMirror ol { margin-block: 0.25rem; padding: 0; list-style: none; }
+.nf-editor .ProseMirror ol { counter-reset: nf-item; }
+.nf-editor .ProseMirror li:not([data-checked]) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+}
+.nf-editor .ProseMirror li:not([data-checked])::before {
+  grid-column: 1;
+  grid-row: 1;
+  min-inline-size: 1rem;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.nf-editor .ProseMirror ul > li:not([data-checked])::before { content: '\2022'; }
+.nf-editor .ProseMirror ol > li { counter-increment: nf-item; }
+.nf-editor .ProseMirror ol > li::before { content: counter(nf-item) '.'; }
+.nf-editor .ProseMirror li:not([data-checked]) > * { grid-column: 2; }
+.nf-editor .ProseMirror li[data-checked] { display: flex; gap: 0.5rem; align-items: baseline; }
+.nf-editor .ProseMirror li[data-checked] > label { flex: none; }
+.nf-editor .ProseMirror li[data-checked] > div { flex: 1; min-width: 0; }
+.nf-editor .ProseMirror li > p,
+.nf-editor .ProseMirror li > div > p { margin: 0; }
+
+.nf-editor .ProseMirror li:has(> p:dir(rtl)),
+.nf-editor .ProseMirror li:has(> div > p:dir(rtl)),
+.nf-editor .ProseMirror blockquote:has(> p:dir(rtl)) { direction: rtl; }
+
+.nf-editor .ProseMirror blockquote {
+  margin-inline: 0;
+  padding-inline-start: 1rem;
+  border-inline-start: 3px solid var(--border);
+  color: var(--text-muted);
+}
+.nf-editor .ProseMirror code {
+  background: var(--surface-muted);
+  border-radius: 6px;
+  padding: 0.1rem 0.3rem;
+  font-family: ui-monospace, monospace;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.nf-editor .ProseMirror pre {
+  background: var(--surface-muted);
+  border-radius: var(--radius-control);
+  padding: 0.75rem;
+  direction: ltr;
+  text-align: left; /* code is always LTR */
+}
+.nf-editor .ProseMirror a { color: var(--primary); text-decoration: underline; }
+.nf-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: inline-start;
+  height: 0;
+  pointer-events: none;
+  color: var(--text-muted);
+}
+
+/* Direction switch: forces direction on every block and container. */
+.nf-editor[data-dir='ltr'] [dir='auto'],
+.nf-editor[data-dir='ltr'] li,
+.nf-editor[data-dir='ltr'] blockquote { direction: ltr !important; }
+.nf-editor[data-dir='rtl'] [dir='auto'],
+.nf-editor[data-dir='rtl'] li,
+.nf-editor[data-dir='rtl'] blockquote { direction: rtl !important; }
+
+.nf-editor .nf-wikilink {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-radius: 6px;
+  padding-inline: 0.25rem;
+  cursor: pointer;
+}
+.nf-editor .nf-wikilink.ProseMirror-selectednode { outline: 2px solid var(--focus-ring); }
