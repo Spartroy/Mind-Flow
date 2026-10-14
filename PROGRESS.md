@@ -28,11 +28,11 @@
 
 **Done**
 - Columns and cards CRUD (quick-add per column, rename column, delete column with cards moved to another column, card editor dialog with title, estimate, due date, column, Today flag, tags).
-- Drag and drop with dnd-kit. Order uses : a move writes one row only, never re-numbers. Positions are compared as plain strings (never localeCompare).
+- Drag and drop with dnd-kit. Order uses `fractional-indexing`: a move writes one row only, never re-numbers. Positions are compared as plain strings (never localeCompare).
 - Keyboard move: focus a card's grip handle, **Alt+Arrow** moves it (Up/Down reorder, Left/Right change column, mirrored in RTL). Result is announced in an aria-live region and focus returns to the card. dnd-kit's Space + arrows also works within a column.
 - Tags (8 colours, created from the card dialog), tag filter, Today filter, search with Arabic folding (أ/إ/آ→ا, ى→ي, ة→ه, diacritics and tatweel ignored).
 - Empty first-run state with localised starter columns. Errors from failed writes show in a dismissable alert and the cache reloads.
-- Data layer:  interface; Supabase implementation plus an in-memory **demo mode** used automatically when  has no Supabase keys (nothing saved on reload).
+- Data layer: `BoardRepo` interface; Supabase implementation plus an in-memory **demo mode** used automatically when `.env` has no Supabase keys (nothing saved on reload).
 - Tests: ordering (200 repeated inserts, cross-column, edges), keyboard move plan, Arabic search folding, mixed-language card renders with dir=auto. 21 tests pass in total.
 - Checked in the browser (demo mode): create, quick-add, Alt+Arrow move with focus kept, pointer drag across columns, Arabic search, tag + estimate + Today, dark + RTL layout.
 
