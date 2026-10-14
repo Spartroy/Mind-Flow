@@ -90,6 +90,11 @@ const supabaseRepo: BoardRepo = {
     if (error) throw error
     return asSession(data)
   },
+  async setSessionMode(mode) {
+    const { data, error } = await supabase.rpc('session_set_mode', { p_mode: mode })
+    if (error) throw error
+    return asSession(data)
+  },
   async finishSession() {
     const { data, error } = await supabase.rpc('session_finish')
     if (error) throw error
@@ -159,6 +164,11 @@ function rawMemoryRepo(db: BoardData): BoardRepo {
     },
     extendSession: async (minutes) => {
       const r = ops.extend(db.sessions, minutes)
+      db.sessions = r.sessions
+      return r.row
+    },
+    setSessionMode: async (mode) => {
+      const r = ops.setMode(db.sessions, mode)
       db.sessions = r.sessions
       return r.row
     },

@@ -8,6 +8,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useNow } from '@/features/timer/clock'
+import { activeSession, formatDuration, loggedSec } from '@/features/timer/core'
+import { nextUp, todayCards } from '@/features/today/logic'
+import { QueuePanel, TodayLane, ViewToggle } from './BlitzViews'
 import { CardTile } from './CardTile'
 import { ColumnView } from './ColumnView'
 import { cardHref, navigate } from '@/lib/router'
@@ -15,6 +19,7 @@ import { FilterBar } from './FilterBar'
 import { useFilter } from './filterStore'
 import { orderedColumns, useBoard, useBoardActions } from './hooks'
 import { cardsIn, filterCards, planKeyboardMove, type MoveDir } from './logic'
+import { useBoardView } from './viewStore'
 
 /** Distinct linked cards per card, counting links in both directions. */
 function linkCountMap(links: { from_card_id: string; to_card_id: string }[]) {
@@ -28,7 +33,7 @@ function linkCountMap(links: { from_card_id: string; to_card_id: string }[]) {
 }
 
 export function Board() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, isPending, error: loadError } = useBoard()
   const act = useBoardActions()
   const { filter, setFilter } = useFilter()
@@ -37,6 +42,8 @@ export function Board() {
   const [error, setError] = useState<string | null>(null)
   const [announce, setAnnounce] = useState('')
   const refocus = useRef<string | null>(null)
+  const { view } = useBoardView()
+  const now = useNow(15_000)
 
   // After a keyboard move the card remounts in its new spot; hand focus back to its handle.
   useEffect(() => {
@@ -69,6 +76,23 @@ export function Board() {
     const activeId = String(active.id)
     const overId = String(over.id)
     if (activeId === overId) return
+    const aType = active.data.current?.type
+    const oType = over.data.current?.type
+    if (aType === 'queue') {
+      // Reordering Today's queue
+      const cardId = String(active.data.current?.cardId)
+      const order = todayCards(data.cards).map((c) => c.id)
+      const overCardId = oType === 'queue' ? String(over.data.current?.cardId) : null
+      if (overCardId) safe(act.moveToday(cardId, order.indexOf(overCardId)))
+      return
+    }
+    if (aType === 'card' && (oType === 'today-drop' || oType === 'queue')) {
+      // Dropping a board card into the Blitz queue plans it for today
+      const idx = oType === 'queue' ? todayCards(data.cards).findIndex((c) => c.id === String(over.data.current?.cardId)) : -1
+      const already = data.cards.find((c) => c.id === activeId)?.is_today
+      safe((already ? Promise.resolve() : act.setToday(activeId, true)).then(() => (idx >= 0 ? act.moveToday(activeId, idx) : undefined)))
+      return
+    }
     const activeCard = data.cards.find((c) => c.id === activeId)
     if (!activeCard) return
 
@@ -112,7 +136,18 @@ export function Board() {
   }
 
   const linkCounts = linkCountMap(data.links)
-  const dragCard = dragId ? data.cards.find((c) => c.id === dragId) : undefined
+  const dragCard = dragId ? data.cards.find((c) => c.id === (dragId.startsWith('q:') ? dragId.slice(2) : dragId)) : undefined
+  const blitzy = view !== 'board'
+  const running = activeSession(data.sessions)
+  const logged = Object.fromEntries(data.cards.map((c) => [c.id, Math.round(loggedSec(data.sessions, c.id, now) / 60)]))
+  const todayList = todayCards(data.cards)
+  const upNext = nextUp(todayList, data.columns)
+  const dateLabel = new Intl.DateTimeFormat(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' }).format(now)
+  const startFromBoard = (id: string) => safe(act.startSession(id))
+  const columnSummary = (colId: string) => {
+    const min = cardsIn(data.cards, colId).reduce((n, c) => n + (c.estimate_min ?? 0), 0)
+    return min > 0 ? formatDuration(min) : undefined
+  }
   const tagsOf = (id: string) =>
     data.cardTags.filter((x) => x.card_id === id).flatMap((x) => data.tags.find((tg) => tg.id === x.tag_id) ?? [])
 
@@ -145,12 +180,16 @@ export function Board() {
         </div>
       ) : (
         <>
-          <header className="px-4 pt-4">
-            <h1 className="text-3xl font-extrabold">{t('boardPage.title')}</h1>
-            <p className="text-sm text-muted">
-              {t('boardPage.summary', { cards: data.cards.filter((c) => !c.archived_at).length, today: data.cards.filter((c) => c.is_today && !c.archived_at).length })}
-            </p>
+          <header className="flex items-start justify-between gap-3 px-4 pt-4">
+            <div>
+              <h1 className="text-3xl font-extrabold">{view === 'board' ? t('boardPage.title') : t('dock.title')}</h1>
+              <p className="text-sm text-muted">
+                {t('boardPage.summary', { cards: data.cards.filter((c) => !c.archived_at).length, today: data.cards.filter((c) => c.is_today && !c.archived_at).length })}
+              </p>
+            </div>
+            <ViewToggle />
           </header>
+          {view === 'blitz' && <TodayLane data={data} now={now} runningCardId={running?.card_id} onOpen={(id) => navigate(cardHref(id))} />}
           <FilterBar filter={filter} onChange={setFilter} tags={data.tags} />
           <DndContext
             sensors={sensors}
@@ -159,7 +198,8 @@ export function Board() {
             onDragEnd={onDragEnd}
             onDragCancel={() => setDragId(null)}
           >
-            <div className="flex flex-1 items-start gap-4 overflow-x-auto p-4">
+            <div className="flex min-h-0 flex-1">
+            <div className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4 pb-28">
               {columns.map((col) => (
                 <ColumnView
                   key={col.id}
@@ -169,6 +209,12 @@ export function Board() {
                   tags={data.tags}
                   cardTags={data.cardTags}
                   linkCounts={linkCounts}
+                  logged={logged}
+                  runningCardId={running?.card_id}
+                  showPlay={blitzy}
+                  onPlay={startFromBoard}
+                  summary={blitzy ? columnSummary(col.id) : undefined}
+                  narrow={view === 'plan'}
                   onAddCard={(title) => safe(act.addCard(title, col.id).done)}
                   onRename={(name) => safe(act.updateColumn(col.id, { name }))}
                   onDelete={() => deleteColumn(col.id)}
@@ -191,6 +237,17 @@ export function Board() {
                   <Plus size={16} strokeWidth={2} aria-hidden />
                 </Button>
               </form>
+            </div>
+              {view === 'plan' && (
+                <QueuePanel
+                  data={data}
+                  now={now}
+                  dateLabel={dateLabel}
+                  canStart={upNext !== undefined || running !== undefined}
+                  onStart={() => (running ? navigate('#/blitz') : upNext && navigate('#/blitz/' + encodeURIComponent(upNext.id)))}
+                  onOpen={(id) => navigate(cardHref(id))}
+                />
+              )}
             </div>
             <DragOverlay>
               {dragCard && <CardTile overlay card={dragCard} tags={tagsOf(dragCard.id)} linkCount={linkCounts[dragCard.id] ?? 0} onOpen={() => {}} onKeyMove={() => {}} />}

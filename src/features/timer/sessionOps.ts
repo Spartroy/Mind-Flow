@@ -58,5 +58,8 @@ export const resume = (sessions: TimeSession[], nowMs: number): OpResult =>
     on_break: false,
   }))
 
+export const setMode = (sessions: TimeSession[], mode: SessionMode): OpResult =>
+  updateActive(sessions, () => true, (s) => ({ ...s, mode, on_break: mode === 'pomodoro' ? s.on_break : false }))
+
 export const extend = (sessions: TimeSession[], minutes: number): OpResult =>
   updateActive(sessions, () => true, (s) => ({ ...s, estimate_snapshot_min: (s.estimate_snapshot_min ?? 0) + minutes }))

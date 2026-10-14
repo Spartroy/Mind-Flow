@@ -53,7 +53,7 @@ export function Sidebar({ route }: { route: Route }) {
   }
 
   return (
-    <nav aria-label={t('nav.main')} className="flex h-full w-60 shrink-0 flex-col gap-2 border-e-[1.5px] border-border bg-surface p-4">
+    <nav aria-label={t('nav.main')} className="hidden h-full w-60 shrink-0 flex-col gap-2 border-e-[1.5px] border-border bg-surface p-4 md:flex">
       <div className="flex items-center gap-3 px-1 pb-2">
         <span className="grid size-10 place-items-center rounded-control bg-primary text-primary-fg" aria-hidden>
           <Timer size={22} strokeWidth={2} />
@@ -120,6 +120,39 @@ export function Sidebar({ route }: { route: Route }) {
           </div>
         )}
       </div>
+    </nav>
+  )
+}
+
+/** Compact top bar for narrow screens (the full sidebar needs 240px). */
+export function MobileNav({ route }: { route: Route }) {
+  const { t } = useTranslation()
+  const { data } = useBoard()
+  const todayCount = data?.cards.filter((c) => c.is_today && !c.archived_at).length ?? 0
+  const items = [
+    { href: '#/board', name: 'board', Icon: Columns3, label: t('nav.board') },
+    { href: '#/today', name: 'today', Icon: Sun, label: t('nav.today') },
+    { href: '#/map', name: 'map', Icon: Network, label: t('nav.map') },
+    { href: '#/reports', name: 'reports', Icon: BarChart3, label: t('nav.reports') },
+    { href: '#/settings', name: 'settings', Icon: Settings, label: t('nav.settings') },
+  ] as const
+  const current = route.name === 'card' ? 'board' : route.name
+  return (
+    <nav aria-label={t('nav.main')} className="flex items-center justify-around gap-1 border-b-[1.5px] border-border bg-surface px-2 py-1.5 md:hidden">
+      {items.map(({ href, name, Icon, label }) => (
+        <a
+          key={name}
+          href={href}
+          aria-label={label}
+          aria-current={current === name ? 'page' : undefined}
+          className={cn('relative grid size-11 place-items-center rounded-control', current === name ? 'bg-primary-soft text-primary' : 'text-fg-2')}
+        >
+          <Icon size={20} strokeWidth={2} aria-hidden />
+          {name === 'today' && todayCount > 0 && (
+            <span className="absolute -end-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-sun px-1 text-[10px] font-bold text-[#1d2733]">{todayCount}</span>
+          )}
+        </a>
+      ))}
     </nav>
   )
 }

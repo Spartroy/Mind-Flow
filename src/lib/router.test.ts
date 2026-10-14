@@ -8,6 +8,8 @@ describe('router', () => {
     expect(parseHash('#/map')).toEqual({ name: 'map' })
     expect(parseHash('#/card')).toEqual({ name: 'board' })
     expect(parseHash('#/nonsense')).toEqual({ name: 'board' })
+    expect(parseHash('#/blitz')).toEqual({ name: 'blitz', id: null })
+    expect(parseHash('#/blitz/abc')).toEqual({ name: 'blitz', id: 'abc' })
   })
   it('distinguishes side panel and full page card routes', () => {
     expect(parseHash(cardHref('abc'))).toEqual({ name: 'card', id: 'abc', page: false })

@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import { linkTargets } from './links'
 import { keyAfter, planMove, sorted } from './logic'
 import { repo } from './repo'
+import { doneColumn, todayPositionAt } from '@/features/today/logic'
 import * as ops from '@/features/timer/sessionOps'
 import type { BoardData, Card, CardLink, Column, SessionMode, Tag, TimeSession } from './types'
 
@@ -125,6 +126,25 @@ export function useBoardActions() {
     )
   }
 
+  // ---- Today
+  const setToday = (id: string, on: boolean) => {
+    const d = qc.getQueryData<BoardData>(KEY)
+    const today_position = on && d ? todayPositionAt(d.cards, id, Number.MAX_SAFE_INTEGER) : null
+    return updateCard(id, { is_today: on, today_position })
+  }
+  const moveToday = (id: string, index: number) => {
+    const d = qc.getQueryData<BoardData>(KEY)
+    if (!d) return Promise.resolve()
+    return updateCard(id, { today_position: todayPositionAt(d.cards, id, index) })
+  }
+  /** Checking a card moves it to the last column; unchecking returns it to the first. */
+  const setDone = (id: string, done: boolean) => {
+    const d = qc.getQueryData<BoardData>(KEY)
+    const cols = sorted(d?.columns ?? [])
+    const target = done ? doneColumn(cols) : cols[0]
+    return target ? moveCard(id, target.id, Number.MAX_SAFE_INTEGER) : Promise.resolve()
+  }
+
   // ---- focus sessions. Times are written by the database clock, so these wait for the server
   // instead of guessing optimistically.
   const putSession = (row: TimeSession | null) => {
@@ -146,7 +166,12 @@ export function useBoardActions() {
   const pauseSession = async (onBreak = false) => putSession(await repo.pauseSession(onBreak))
   const resumeSession = async () => putSession(await repo.resumeSession())
   const extendSession = async (minutes: number) => putSession(await repo.extendSession(minutes))
-  const finishSession = async () => putSession(await repo.finishSession())
+  const setSessionMode = async (mode: SessionMode) => putSession(await repo.setSessionMode(mode))
+  const finishSession = async () => {
+    const row = await repo.finishSession()
+    putSession(row)
+    return row
+  }
 
   const setCardTags = (cardId: string, tagIds: string[]) =>
     run(
@@ -157,7 +182,7 @@ export function useBoardActions() {
       () => repo.setCardTags(cardId, tagIds),
     )
 
-  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags, saveBody, snapshot: () => qc.getQueryData<BoardData>(KEY), startSession, pauseSession, resumeSession, extendSession, finishSession }
+  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags, saveBody, snapshot: () => qc.getQueryData<BoardData>(KEY), setToday, moveToday, setDone, startSession, pauseSession, resumeSession, extendSession, finishSession, setSessionMode }
 }
 
 export const orderedColumns = (d: BoardData) => sorted(d.columns)

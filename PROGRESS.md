@@ -79,13 +79,51 @@ Code: `src/features/editor/` (`MarkdownEditor`, `dirAuto.ts`, `wikiLink.ts`, `ed
 - Tests (43 total): link parsing, resolution by id and title, diff, title refresh, code exclusion; estimate parsing; router; table and wikilink round-trips.
 
 **Stubbed / not done**
-- Sessions list in the rail is an empty state until Phase 3. Blitz button is disabled.
+- (Done in Phase 3) Sessions list in the card rail and the Blitz button.
 - Not run against real Supabase (Docker still missing): `syncWikiLinks`, `card_links` reads and the new `created_at`/`updated_at` selects are typechecked only.
 - Sidebar is desktop-only (no mobile collapse yet). Search bar and Ctrl+K from the design are Phase 5.
 - In the Arabic UI an empty note shows its placeholder on the left (empty blocks default to LTR until the first strong character).
 - "More" menu has no Archive action (the design shows one): `archived_at` exists, but there is no archive UI or restore yet.
 - Estimate placeholder (45m) looks like a value; consider a lighter style.
 - Demo mode now keeps its data in sessionStorage for the tab so dev reloads do not lose it.
+
+## Phase 3: Timer and Blitz
+
+### Document PiP spike: findings
+Code: `src/features/timer/usePip.ts`, `pip.tsx`, dev page `/#/spike-pip`.
+1. **Feature detection is not enough.** The embedded Chromium here exposes `documentPictureInPicture` but `requestWindow()` throws `InvalidStateError: Internal error: no window`. The fallback therefore triggers on *failure*, not only on a missing API (tested with a mocked API).
+2. **The PiP window cannot be reopened after a refresh** (browsers require a user gesture), so it closes with the page. The timer itself recovers (see below); the user reopens the floating window with one click (dock or Blitz "Float timer").
+3. **Recovery by design.** The timer is a session row (server timestamps) plus arithmetic, not a counter. Closing the PiP window, refreshing, or sleeping the laptop cannot skew it. Verified in the browser: refresh mid-session continued at the right second; pause froze the clock and added the pause to `paused_total_sec`; resume continued; the 2-hour-sleep case is a unit test.
+4. Styles are copied into the PiP document from `document.styleSheets` (cross-origin sheets are linked instead); theme and direction are mirrored with a MutationObserver. React renders into the PiP window through a portal.
+5. **Not verified by me: a real Document PiP window.** The pane's browser refuses it and Claude in Chrome was not connected. Please check in Chrome or Edge (steps below).
+
+### Done
+- **Server-anchored sessions.** `supabase/migrations/20261014000100_sessions.sql`: `session_start / pause / resume / extend / finish / set_mode` and `server_now()`, all `security invoker` (RLS applies), all writing the database clock. Starting a session finishes any running one (never two). 20 SQL tests on PGlite: one running per user, pause/resume totals, finish while paused, other users untouched, mode switch, break counting.
+- **Timer core** (`timer/core.ts`, 20 tests): elapsed = (ended | paused | now) minus started minus paused total; overtime; Pomodoro blocks and breaks (a break is a pause flagged `on_break`, so break time is never logged); clock offset between device and database; formatting. Demo mode mirrors the SQL in `sessionOps.ts` with the same tests.
+- **Today** (`/#/today`): ordered list (drag, or Alt+Up/Down), capacity bar (planned vs 4h; amber and "N m over" when exceeded; green and "Complete" when all done), empty and all-done states, "Suggested to add" (open, estimated, soonest due then shortest), check = move to last column (uncheck = first column), remove from Today, Running badge, logged chip turns coral over estimate, "Blitz now". 9 tests for the logic.
+- **Blitz** (`/#/blitz/:cardId`): Timer (ring, countdown to estimate, +10 min, pause, finish), Overtime (counts up, calm coral message, no alarm), Pomodoro (25/5: auto break at the end of a block, break screen with tips, +2 min, skip, "break's over"), Writing-only (just the note and a quiet timer, Esc leaves), checklist from the note (toggle writes back to the Markdown), editable note with toolbar. Mode switch keeps the same session. Space pauses (not while typing).
+- **Finish dialog**: time spent, estimate, difference (green under, coral over), move card to a column, next card from Today, done for now.
+- **Floating timer**: Document PiP 300x130 and 160x60 micro with pause and finish, in-page fallback widget with the Chrome/Edge hint (shown when PiP is unsupported or refused).
+- **Board x Blitz**: Board / Blitz / Plan toggle. Blitz view: Today's lane strip, one-tap play on every card, logged chips, per-column estimate totals; floating dock (running card, timer, pause, float, finish, expand) shows on every screen outside Blitz. Plan view: narrower columns plus the Blitz queue panel (capacity, reorderable queue, drag-to-add drop zone, Start Blitz).
+- Card panel: Blitz button enabled; Sessions list with times and mode; "Sessions · 1m of 45m".
+- Responsive: sidebar becomes a top icon bar below 768px.
+- Tests: 92 in total.
+
+### Check these in Chrome or Edge (needs a real Document PiP window)
+1. `npm run dev`, open `/#/spike-pip`, press Start, then "Open floating timer": a 300x130 window should appear and tick. Close it: the page log says so and the timer keeps running. Refresh the page: the time is still right; reopen the window with the button.
+2. In the app, start a Blitz, press "Float timer", switch to another app: the window floats over it. Pause from the floating window; the main page shows paused.
+3. Press the shrink icon in the floating window: it should become 160x60 (resizing a PiP window may be refused in some versions: the layout still switches).
+
+### Stubbed / not done
+- Not run against real Supabase (Docker still missing): the six `session_*` functions are tested only on PGlite, and the `rpc` calls in `repo.ts` are untested.
+- Pomodoro lengths (25/5), overtime message and day capacity (4h) are constants in `timer/config.ts` / `today/logic.ts`; the `settings` columns exist but the Settings screen is Phase 5.
+- If the app is closed during a Pomodoro block, the break starts when the app is next opened (the elapsed time stays correct, but the missed break is not back-dated).
+- "Plan tomorrow" only removes finished cards from Today. No sound at the end of a session yet.
+- Capacity uses estimates of all today cards; cards without an estimate count as 0.
+- Deleting a card deletes its sessions (FK cascade). Archive is not built yet.
+- `breaks_taken` and `on_break` are new columns on `time_sessions` (in the sessions migration, not the init one).
+
+- **Not checked by hand (logic is unit-tested, UI paths are not):** the mobile top bar, Space to pause and Esc to leave, ticking a checklist item in Blitz, Alt+Up/Down and drag reordering on Today, the +2 min break button, the in-page widget finish button, Plan queue reordering.
 
 ## Known issues
 - Production bundle is over 500 kB (no code splitting yet).

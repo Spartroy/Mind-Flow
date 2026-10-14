@@ -104,6 +104,26 @@ describe('session functions', () => {
     expect(s.estimate_snapshot_min).toBe(35)
   })
 
+  it('switches mode on the same session without touching its time', async () => {
+    const before = await as(A, () => one(`select * from public.time_sessions where ended_at is null`))
+    const s = await as(A, () => one(`select * from public.session_set_mode('writing')`))
+    expect(s.id).toBe(before.id)
+    expect(s.mode).toBe('writing')
+    expect(s.on_break).toBe(false)
+    expect(s.paused_total_sec).toBe(before.paused_total_sec)
+  })
+
+  it('counts completed Pomodoro breaks', async () => {
+    await as(A, async () => {
+      await one(`select * from public.session_set_mode('pomodoro')`)
+      const before = (await one(`select * from public.time_sessions where ended_at is null`)) as unknown as { breaks_taken: number }
+      const b = await one(`select * from public.session_pause(true)`)
+      expect(b.on_break).toBe(true)
+      expect((b as unknown as { breaks_taken: number }).breaks_taken).toBe(before.breaks_taken + 1)
+      await one(`select * from public.session_resume()`)
+    })
+  })
+
   it('finishing while paused folds the open pause into the total', async () => {
     await as(A, async () => {
       const before = (await one(`select * from public.time_sessions where ended_at is null`)).paused_total_sec

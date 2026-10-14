@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { lastPipError, PipPortal, pipSupported, usePip } from './pip'
+import { PipPortal } from './pip'
+import { lastPipError, pipSupported, usePip } from './usePip'
 
 const KEY = 'nf-pip-spike'
 type Saved = { startedAt: number; pausedAt: number | null; pausedTotal: number } | null

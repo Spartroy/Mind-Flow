@@ -8,12 +8,14 @@ import { refreshWikiTitles } from '@/features/board/links'
 import { normalize, sorted } from '@/features/board/logic'
 import type { BoardData, Card } from '@/features/board/types'
 import { MarkdownEditor, type DirMode } from '@/features/editor/MarkdownEditor'
+import { useNow } from '@/features/timer/clock'
+import { elapsedSec, formatDuration, loggedSec } from '@/features/timer/core'
 import { cardHref, navigate } from '@/lib/router'
 import { cn } from '@/lib/utils'
 import { EditorToolbar } from './EditorToolbar'
+import { useNoteDraft } from './useNoteDraft'
 import { formatEstimateInput, parseEstimate } from './estimate'
 
-const SAVE_DELAY_MS = 700
 const closeToBoard = () => navigate('#/board')
 
 export function CardPanel({ id, page }: { id: string; page: boolean }) {
@@ -46,30 +48,12 @@ function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: bo
     [t],
   )
 
-  // ---- note: debounced autosave, flushed on close
+  // ---- note: debounced autosave, flushed on close (see useNoteDraft)
   // Computed once per open: shows renamed targets by their current title without re-saving.
   const [initialBody] = useState(() => refreshWikiTitles(card.body_md, data.cards))
-  const draft = useRef(card.body_md)
-  const saved = useRef(card.body_md)
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const flush = useCallback(() => {
-    clearTimeout(timer.current)
-    if (draft.current === saved.current) return
-    saved.current = draft.current
-    report(act.saveBody(card.id, draft.current))
-  }, [act, card.id, report])
-  const onBody = (md: string) => {
-    draft.current = md
-    clearTimeout(timer.current)
-    timer.current = setTimeout(flush, SAVE_DELAY_MS)
-  }
-  useEffect(() => {
-    window.addEventListener('pagehide', flush)
-    return () => {
-      window.removeEventListener('pagehide', flush)
-      flush()
-    }
-  }, [flush])
+  const { onChange: onBody } = useNoteDraft(card.id, card.body_md, (e) =>
+    setError(t('panel.saveFailed', { message: e instanceof Error ? e.message : String(e) })),
+  )
 
   // ---- fields
   const [title, setTitle] = useState(card.title)
@@ -121,6 +105,9 @@ function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: bo
     if (!page) dialogRef.current?.showModal()
   }, [page])
 
+  const nowMs = useNow(30_000)
+  const sessionRows = data.sessions.filter((x) => x.card_id === card.id).sort((a, b) => (a.started_at < b.started_at ? 1 : -1))
+  const timeFmt = (iso: string) => new Intl.DateTimeFormat(i18n.language, { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso))
   const dateFmt = (iso: string) =>
     iso ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'short' }).format(new Date(iso)) : ''
   const updatedLabel = (() => {
@@ -150,10 +137,10 @@ function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: bo
           <ChevronDown size={14} strokeWidth={2} aria-hidden className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2" />
         </label>
         <div className="ms-auto flex items-center gap-2">
-          <Button variant={card.is_today ? 'sun' : 'outline'} aria-pressed={card.is_today} onClick={() => report(act.updateCard(card.id, { is_today: !card.is_today }))}>
+          <Button variant={card.is_today ? 'sun' : 'outline'} aria-pressed={card.is_today} onClick={() => report(act.setToday(card.id, !card.is_today))}>
             <Sun {...icon} /> {t('panel.today')}
           </Button>
-          <Button disabled title={t('panel.blitzSoon')}>
+          <Button onClick={() => navigate(`#/blitz/${encodeURIComponent(card.id)}`)}>
             <Timer {...icon} /> {t('panel.blitz')}
           </Button>
           <details className="relative">
@@ -288,7 +275,20 @@ function PanelBody({ card, data, page }: { card: Card; data: BoardData; page: bo
             <Rail title={t('panel.linked')} empty={t('panel.noLinks')}>
               {linked.map((c) => <CardLinkRow key={c.id} card={c} data={data} />)}
             </Rail>
-            <Rail title={t('panel.sessions')} empty={t('panel.noSessions')}>{[]}</Rail>
+            <Rail
+              title={t('panel.sessionsTotal', { logged: formatDuration(Math.round(loggedSec(data.sessions, card.id, nowMs) / 60)), est: card.estimate_min !== null ? formatDuration(card.estimate_min) : '—' })}
+              empty={t('panel.noSessions')}
+            >
+              {sessionRows.map((x) => (
+                <li key={x.id} className="rounded-control border-[1.5px] border-border bg-surface px-3 py-2 text-sm">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-bold">{dateFmt(x.started_at)}</span>
+                    <span className="font-bold text-primary tabular">{formatDuration(Math.max(1, Math.round(elapsedSec(x, nowMs) / 60)))}</span>
+                  </div>
+                  <p className="text-xs text-muted tabular">{timeFmt(x.started_at)}{x.ended_at ? '–' + timeFmt(x.ended_at) : ''} · {t('blitz.' + x.mode)}</p>
+                </li>
+              ))}
+            </Rail>
           </aside>
         </div>
       </div>

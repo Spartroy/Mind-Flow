@@ -124,7 +124,8 @@
     "noLinks": "Type [[ in the note to link a card",
     "noSessions": "No focus sessions yet",
     "notFound": "This card no longer exists.",
-    "saveFailed": "Could not save: {{message}}"
+    "saveFailed": "Could not save: {{message}}",
+    "sessionsTotal": "Sessions · {{logged}} of {{est}}"
   },
   "editor": {
     "note": "Note",
@@ -146,5 +147,117 @@
     "linkUrl": "Link address",
     "applyLink": "Apply",
     "removeLink": "Remove link"
+  },
+  "today": {
+    "eyebrow": "Today",
+    "blitzNow": "Blitz now",
+    "available": "{{avail}} available",
+    "planned": "{{planned}} planned of {{avail}} available",
+    "plannedDone": "{{planned}} planned · {{done}} done",
+    "complete": "Complete",
+    "over": "{{min}}m over",
+    "overNote": "You're {{min}} minutes over today's capacity. Move a card to tomorrow or trim an estimate.",
+    "emptyTitle": "Nothing planned for today",
+    "emptyBody": "Drag cards in from the board or add from the suggestions below, then start your first focus session.",
+    "allDoneTitle": "All done for today",
+    "allDoneBody": "You finished {{count}} cards in {{time}}. Rest up, you earned it.",
+    "planTomorrow": "Plan tomorrow",
+    "suggested": "Suggested to add",
+    "addToToday": "Add to Today",
+    "noSuggestions": "Nothing to suggest yet. Give cards an estimate and they show up here.",
+    "remove": "Remove {{title}} from Today",
+    "markDone": "Mark {{title}} as done",
+    "reorder": "Reorder {{title}}",
+    "reorderHint": "Alt+Up or Alt+Down moves it",
+    "running": "Running",
+    "estimate": "Estimate",
+    "logged": "Logged",
+    "needTwoColumns": "Add a second column to mark cards done",
+    "moved": "{{title}} moved to position {{n}}"
+  },
+  "blitz": {
+    "exit": "Exit",
+    "modes": "Timer mode",
+    "timer": "Timer",
+    "pomodoro": "Pomodoro",
+    "writing": "Writing-only",
+    "floatTimer": "Float timer",
+    "ofEstimate": "of {{est}} estimate · {{done}} done",
+    "noEstimate": "no estimate · {{done}} done",
+    "pause": "Pause",
+    "resume": "Resume",
+    "plus10": "+10 min",
+    "finish": "Finish",
+    "pastEstimate": "past the {{est}} estimate",
+    "overtimeMsg": "You're past your estimate, and that's okay. Wrap up what's left, or add time and keep going.",
+    "checklist": "Checklist",
+    "noChecklist": "No checklist items in this note yet.",
+    "note": "Note",
+    "sessionComplete": "Session {{n}} complete",
+    "breakTime": "Break time",
+    "breakOver": "Break's over",
+    "tips": {
+      "stretch": [
+        "Stretch",
+        "Stand up and roll your shoulders and neck for a minute."
+      ],
+      "water": [
+        "Drink water",
+        "Got a glass nearby? Now is the moment."
+      ],
+      "look": [
+        "Look away",
+        "Look at something 20 feet away for 20 seconds."
+      ]
+    },
+    "upNext": "Up next: {{title}}",
+    "plus2": "+2 min",
+    "skipBreak": "Skip break",
+    "startNext": "Start next session",
+    "paused": "Paused",
+    "escToLeave": "Press Esc to leave",
+    "noSession": "No focus session is running.",
+    "pickCard": "Start one from a card or from Today.",
+    "backToToday": "Go to Today",
+    "timerLabel": "Elapsed focus time",
+    "startFailed": "Could not start the session: {{message}}",
+    "pomodoroBlock": "Session {{n}}",
+    "estLeft": "of {{est}} estimate · {{left}} left",
+    "noEstimateShort": "no estimate"
+  },
+  "finishDlg": {
+    "title": "Session complete",
+    "spent": "Time spent",
+    "estimate": "Estimate",
+    "difference": "Difference",
+    "moveTo": "Move card to column",
+    "next": "Next card from Today",
+    "doneForNow": "Done for now",
+    "keepColumn": "Keep in current column"
+  },
+  "float": {
+    "label": "Floating timer",
+    "reopen": "Reopen floating timer",
+    "close": "Close floating timer",
+    "fallback": "Stays inside this tab. Open in Chrome or Edge for a window that floats over other apps.",
+    "refused": "The browser did not allow a floating window, so the timer stays in this tab."
+  },
+  "dock": {
+    "expand": "Expand to full focus",
+    "lane": "Today's lane",
+    "play": "Start Blitz on {{title}}",
+    "board": "Board",
+    "blitz": "Blitz",
+    "view": "Board layout",
+    "queue": "Blitz queue",
+    "ofCap": "of {{cap}}",
+    "dropHere": "Drop here to add to Today",
+    "start": "Start Blitz",
+    "reorderHint": "Drag cards to reorder the queue",
+    "plannedLabel": "{{planned}} planned",
+    "title": "Board · Blitz view",
+    "running": "Running: {{title}}",
+    "inEstimate": "{{column}} · of {{est}} estimate",
+    "plan": "Plan"
   }
 }

@@ -85,3 +85,19 @@ grant execute on function
   public.server_now(), public.session_finish(), public.session_start(uuid, text, int),
   public.session_pause(boolean), public.session_resume(), public.session_extend(int)
   to authenticated;
+
+-- Switching Timer / Pomodoro / Writing-only keeps the same session: time is never split or lost.
+create function public.session_set_mode(p_mode text) returns public.time_sessions
+language plpgsql as $$
+declare s public.time_sessions;
+begin
+  update public.time_sessions
+     set mode = p_mode,
+         -- a break only exists in Pomodoro mode
+         on_break = case when p_mode = 'pomodoro' then on_break else false end
+   where ended_at is null
+   returning * into s;
+  return s;
+end $$;
+
+grant execute on function public.session_set_mode(text) to authenticated;

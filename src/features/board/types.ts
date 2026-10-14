@@ -85,6 +85,7 @@ export interface BoardRepo {
   pauseSession(onBreak: boolean): Promise<TimeSession | null>
   resumeSession(): Promise<TimeSession | null>
   extendSession(minutes: number): Promise<TimeSession | null>
+  setSessionMode(mode: SessionMode): Promise<TimeSession | null>
   finishSession(): Promise<TimeSession | null>
 }
 

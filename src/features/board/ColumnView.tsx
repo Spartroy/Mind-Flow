@@ -15,6 +15,14 @@ interface Props {
   tags: Tag[]
   cardTags: CardTag[]
   linkCounts: Record<string, number>
+  /** Minutes logged per card id (Blitz views). */
+  logged?: Record<string, number>
+  runningCardId?: string
+  showPlay?: boolean
+  onPlay?: (cardId: string) => void
+  /** Optional summary shown in the header, e.g. total estimate. */
+  summary?: string
+  narrow?: boolean
   onAddCard: (title: string) => void
   onRename: (name: string) => void
   onDelete: () => void
@@ -34,7 +42,7 @@ export function ColumnView(p: Props) {
   return (
     <section
       aria-label={p.column.name}
-      className="flex w-72 shrink-0 flex-col rounded-card border-[1.5px] border-border bg-surface-muted"
+      className={`flex shrink-0 flex-col ${p.narrow ? "w-60" : "w-72"} rounded-card border-[1.5px] border-border bg-surface-muted`}
       style={{ borderBlockStartWidth: 5, borderBlockStartColor: `var(--${p.column.color})` }}
     >
       <header className="flex items-center gap-2 p-3">
@@ -58,6 +66,7 @@ export function ColumnView(p: Props) {
             {p.column.name}
           </button>
         )}
+        {p.summary && <span className="text-xs text-muted tabular">{p.summary}</span>}
         <span className="rounded-full bg-surface px-2 text-xs tabular" aria-label={t('board.cardCount', { count: p.totalCount })}>
           {p.cards.length === p.totalCount ? p.totalCount : `${p.cards.length}/${p.totalCount}`}
         </span>
@@ -99,6 +108,10 @@ export function ColumnView(p: Props) {
               card={card}
               tags={tagsFor(card.id)}
               linkCount={p.linkCounts[card.id] ?? 0}
+              loggedMin={p.logged?.[card.id] ?? 0}
+              showPlay={p.showPlay}
+              running={p.runningCardId === card.id}
+              onPlay={() => p.onPlay?.(card.id)}
               onOpen={() => p.onOpenCard(card.id)}
               onKeyMove={(dir) => p.onKeyMove(card.id, dir)}
             />
