@@ -1,0 +1,111 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
+import { keyAfter, planMove, sorted } from './logic'
+import { repo } from './repo'
+import type { BoardData, Card, Column, Tag } from './types'
+
+const KEY = ['board'] as const
+
+export const useBoard = () => useQuery({ queryKey: KEY, queryFn: () => repo.load() })
+
+/**
+ * Every action updates the cache first (optimistic), then writes; on failure the
+ * cache is reloaded from the server and the error is rethrown to the caller.
+ */
+export function useBoardActions() {
+  const qc = useQueryClient()
+
+  const run = useCallback(
+    async (patch: (d: BoardData) => BoardData, write: () => Promise<void>) => {
+      qc.setQueryData<BoardData>(KEY, (d) => (d ? patch(d) : d))
+      try {
+        await write()
+      } catch (e) {
+        await qc.invalidateQueries({ queryKey: KEY })
+        throw e
+      }
+    },
+    [qc],
+  )
+
+  const addColumn = (name: string, color = 'tag-5') => {
+    const cols = qc.getQueryData<BoardData>(KEY)?.columns ?? []
+    const c: Column = { id: crypto.randomUUID(), name, color, position: keyAfter(cols) }
+    return run((d) => ({ ...d, columns: [...d.columns, c] }), () => repo.createColumn(c))
+  }
+
+  const addStarterColumns = async (names: string[]) => {
+    for (const [i, name] of names.entries()) {
+      const color = ['tag-6', 'tag-2', 'tag-4'][i] ?? 'tag-5'
+      await addColumn(name, color)
+    }
+  }
+
+  const updateColumn = (id: string, patch: Partial<Omit<Column, 'id'>>) =>
+    run((d) => ({ ...d, columns: d.columns.map((c) => (c.id === id ? { ...c, ...patch } : c)) }), () =>
+      repo.updateColumn(id, patch),
+    )
+
+  /** Cards in the column move to `moveTo`; refuses if cards would be orphaned. */
+  const deleteColumn = async (id: string, moveTo: string | null) => {
+    const d = qc.getQueryData<BoardData>(KEY)
+    const inCol = d?.cards.filter((c) => c.column_id === id) ?? []
+    if (inCol.length && !moveTo) throw new Error('Column has cards and no destination column')
+    for (const c of inCol) {
+      // Re-read each time so every moved card lands after the previous one.
+      const fresh = qc.getQueryData<BoardData>(KEY)!.cards
+      await updateCard(c.id, planMove(fresh, c.id, moveTo!, Number.MAX_SAFE_INTEGER))
+    }
+    await run((x) => ({ ...x, columns: x.columns.filter((c) => c.id !== id) }), () => repo.deleteColumn(id))
+  }
+
+  const addCard = (title: string, columnId: string) => {
+    const cards = (qc.getQueryData<BoardData>(KEY)?.cards ?? []).filter((c) => c.column_id === columnId)
+    const card: Card = {
+      id: crypto.randomUUID(), title, body_md: '', column_id: columnId, position: keyAfter(cards),
+      estimate_min: null, is_today: false, due_date: null, archived_at: null,
+    }
+    return run((d) => ({ ...d, cards: [...d.cards, card] }), () => repo.createCard(card))
+  }
+
+  const updateCard = (id: string, patch: Partial<Omit<Card, 'id'>>) =>
+    run((d) => ({ ...d, cards: d.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) }), () =>
+      repo.updateCard(id, patch),
+    )
+
+  const deleteCard = (id: string) =>
+    run(
+      (d) => ({
+        ...d,
+        cards: d.cards.filter((c) => c.id !== id),
+        cardTags: d.cardTags.filter((t) => t.card_id !== id),
+      }),
+      () => repo.deleteCard(id),
+    )
+
+  const moveCard = (cardId: string, columnId: string, index: number) => {
+    const d = qc.getQueryData<BoardData>(KEY)
+    if (!d) return Promise.resolve()
+    return updateCard(cardId, planMove(d.cards, cardId, columnId, index))
+  }
+
+  const createTag = async (name: string): Promise<Tag> => {
+    const tags = qc.getQueryData<BoardData>(KEY)?.tags ?? []
+    const tag: Tag = { id: crypto.randomUUID(), name, color_index: tags.length % 8 }
+    await run((d) => ({ ...d, tags: [...d.tags, tag] }), () => repo.createTag(tag))
+    return tag
+  }
+
+  const setCardTags = (cardId: string, tagIds: string[]) =>
+    run(
+      (d) => ({
+        ...d,
+        cardTags: [...d.cardTags.filter((t) => t.card_id !== cardId), ...tagIds.map((tag_id) => ({ card_id: cardId, tag_id }))],
+      }),
+      () => repo.setCardTags(cardId, tagIds),
+    )
+
+  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags }
+}
+
+export const orderedColumns = (d: BoardData) => sorted(d.columns)

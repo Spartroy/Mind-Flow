@@ -1,5 +1,7 @@
 {
-  "app": { "name": "NeuroFlow" },
+  "app": {
+    "name": "NeuroFlow"
+  },
   "auth": {
     "title": "Sign in to NeuroFlow",
     "email": "Email",
@@ -10,8 +12,66 @@
     "magicSent": "Check your inbox for the sign-in link.",
     "loading": "Working…",
     "orSeparator": "or",
-    "errors": { "generic": "Something went wrong. Try again.", "required": "Enter your email and password." }
+    "errors": {
+      "generic": "Something went wrong. Try again.",
+      "required": "Enter your email and password."
+    }
   },
-  "settings": { "theme": "Theme", "light": "Light", "dark": "Dark", "system": "System", "direction": "Direction", "language": "Language" },
-  "home": { "signedIn": "Signed in as {{email}}", "signOut": "Sign out", "board": "Board comes in Phase 1." }
+  "settings": {
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "direction": "Direction",
+    "language": "Language"
+  },
+  "home": {
+    "signedIn": "Signed in as {{email}}",
+    "signOut": "Sign out",
+    "board": "Board comes in Phase 1.",
+    "demo": "Demo mode: not saved"
+  },
+  "board": {
+    "dragHandle": "Move card: {{title}}",
+    "dragHint": "Drag, or press Space then arrow keys. Alt+arrows move directly.",
+    "untitled": "Untitled",
+    "today": "Today",
+    "estimate": "Estimate",
+    "links": "Links",
+    "renameColumn": "Column name",
+    "cardCount": "{{count}} cards",
+    "deleteColumn": "Delete column {{name}}",
+    "quickAdd": "Add a card",
+    "quickAddLabel": "Add a card to {{name}}",
+    "moved": "{{title}} moved to {{column}}, position {{position}}",
+    "cannotDeleteLastColumn": "Move or delete the cards first: there is no other column to move them to.",
+    "confirmDeleteColumn": "Delete column \"{{name}}\"? Its {{count}} cards move to \"{{dest}}\".",
+    "dismiss": "Dismiss",
+    "emptyTitle": "Your board is empty",
+    "emptyBody": "Start with To do, Doing and Done, or add your own column.",
+    "starterColumns": "Create starter columns",
+    "columnName": "New column name",
+    "addColumn": "Add column",
+    "search": "Search cards",
+    "clearFilters": "Clear",
+    "editCard": "Edit card",
+    "title": "Title",
+    "estimateMin": "Estimate (min)",
+    "due": "Due date",
+    "column": "Column",
+    "flagToday": "Flag for Today",
+    "tags": "Tags",
+    "selected": "selected",
+    "newTag": "New tag",
+    "addTag": "Add",
+    "delete": "Delete card",
+    "confirmDelete": "Delete this card permanently?",
+    "cancel": "Cancel",
+    "save": "Save",
+    "starter": [
+      "To do",
+      "Doing",
+      "Done"
+    ]
+  }
 }

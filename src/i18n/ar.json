@@ -1,5 +1,7 @@
 {
-  "app": { "name": "NeuroFlow" },
+  "app": {
+    "name": "NeuroFlow"
+  },
   "auth": {
     "title": "تسجيل الدخول إلى NeuroFlow",
     "email": "البريد الإلكتروني",
@@ -10,8 +12,66 @@
     "magicSent": "تحقق من بريدك للحصول على رابط الدخول.",
     "loading": "جارٍ التنفيذ…",
     "orSeparator": "أو",
-    "errors": { "generic": "حدث خطأ ما. حاول مرة أخرى.", "required": "أدخل البريد الإلكتروني وكلمة المرور." }
+    "errors": {
+      "generic": "حدث خطأ ما. حاول مرة أخرى.",
+      "required": "أدخل البريد الإلكتروني وكلمة المرور."
+    }
   },
-  "settings": { "theme": "المظهر", "light": "فاتح", "dark": "داكن", "system": "النظام", "direction": "الاتجاه", "language": "اللغة" },
-  "home": { "signedIn": "تم تسجيل الدخول باسم {{email}}", "signOut": "تسجيل الخروج", "board": "اللوحة في المرحلة 1." }
+  "settings": {
+    "theme": "المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام",
+    "direction": "الاتجاه",
+    "language": "اللغة"
+  },
+  "home": {
+    "signedIn": "تم تسجيل الدخول باسم {{email}}",
+    "signOut": "تسجيل الخروج",
+    "board": "اللوحة في المرحلة 1.",
+    "demo": "وضع تجريبي: لا يتم الحفظ"
+  },
+  "board": {
+    "dragHandle": "نقل البطاقة: {{title}}",
+    "dragHint": "اسحب، أو اضغط المسافة ثم الأسهم. Alt مع الأسهم ينقل مباشرة.",
+    "untitled": "بدون عنوان",
+    "today": "اليوم",
+    "estimate": "التقدير",
+    "links": "الروابط",
+    "renameColumn": "اسم العمود",
+    "cardCount": "{{count}} بطاقات",
+    "deleteColumn": "حذف العمود {{name}}",
+    "quickAdd": "أضف بطاقة",
+    "quickAddLabel": "أضف بطاقة إلى {{name}}",
+    "moved": "تم نقل {{title}} إلى {{column}}، الموضع {{position}}",
+    "cannotDeleteLastColumn": "انقل البطاقات أو احذفها أولاً: لا يوجد عمود آخر لنقلها إليه.",
+    "confirmDeleteColumn": "حذف العمود \"{{name}}\"؟ ستنتقل بطاقاته ({{count}}) إلى \"{{dest}}\".",
+    "dismiss": "إغلاق",
+    "emptyTitle": "لوحتك فارغة",
+    "emptyBody": "ابدأ بالأعمدة: للتنفيذ، قيد التنفيذ، منجز، أو أضف عمودك الخاص.",
+    "starterColumns": "إنشاء الأعمدة الأساسية",
+    "columnName": "اسم العمود الجديد",
+    "addColumn": "إضافة عمود",
+    "search": "ابحث في البطاقات",
+    "clearFilters": "مسح",
+    "editCard": "تعديل البطاقة",
+    "title": "العنوان",
+    "estimateMin": "التقدير (دقائق)",
+    "due": "تاريخ الاستحقاق",
+    "column": "العمود",
+    "flagToday": "ضع علامة لليوم",
+    "tags": "الوسوم",
+    "selected": "محدد",
+    "newTag": "وسم جديد",
+    "addTag": "إضافة",
+    "delete": "حذف البطاقة",
+    "confirmDelete": "حذف هذه البطاقة نهائياً؟",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "starter": [
+      "للتنفيذ",
+      "قيد التنفيذ",
+      "منجز"
+    ]
+  }
 }
