@@ -1,0 +1,36 @@
+@import '@xyflow/react/dist/style.css';
+
+/* React Flow skinned with the app's tokens (light and dark follow the .light/.dark class). */
+.nf-map .react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke-default: var(--primary);
+  --xy-handle-background-color-default: var(--primary);
+  --xy-handle-border-color-default: var(--surface);
+  --xy-minimap-background-color-default: var(--surface-muted);
+  --xy-minimap-mask-background-color-default: color-mix(in srgb, var(--surface) 55%, transparent);
+  font-family: var(--font-sans);
+}
+.nf-map .react-flow__attribution { display: none; }
+.nf-map .react-flow__minimap {
+  background: var(--surface-muted);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+.nf-map .react-flow__node { cursor: grab; }
+.nf-map .react-flow__node:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 12px; }
+.nf-map .react-flow__handle { width: 9px; height: 9px; opacity: 0; transition: opacity 120ms; }
+.nf-map .react-flow__node:hover .react-flow__handle,
+.nf-map .react-flow__node.selected .react-flow__handle,
+.nf-map .react-flow__handle.connectingfrom,
+.nf-map .react-flow__handle.connectingto { opacity: 1; }
+
+/* Edge kinds: [[link]] thin solid, manual dashed, parent thick. */
+.nf-map .react-flow__edge-path { stroke-linecap: round; transition: opacity 160ms, stroke-width 160ms; }
+.nf-map .nf-edge-wikilink .react-flow__edge-path { stroke: var(--primary); stroke-width: 1.6; }
+.nf-map .nf-edge-manual .react-flow__edge-path { stroke: var(--text-muted); stroke-width: 1.8; stroke-dasharray: 7 6; }
+.nf-map .nf-edge-parent .react-flow__edge-path { stroke: var(--primary); stroke-width: 4.5; }
+.nf-map .react-flow__edge.selected .react-flow__edge-path { stroke: var(--sun); }
+.nf-map .nf-dim .react-flow__edge-path { opacity: 0.14; }
+.nf-map .nf-lit .react-flow__edge-path { stroke-width: 3; }
+.nf-map .nf-node-dim { opacity: 0.32; }

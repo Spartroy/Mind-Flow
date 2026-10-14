@@ -1,7 +1,7 @@
 import { supabase, supabaseConfigured } from '@/lib/supabase'
 import * as ops from '@/features/timer/sessionOps'
 import { diffLinks } from './links'
-import { emptyBoard, type BoardData, type BoardRepo, type CardLink, type TimeSession } from './types'
+import { emptyBoard, type BoardData, type BoardRepo, type CardLink, type MapNode, type MindMap, type TimeSession } from './types'
 
 const SESSION_COLS = 'id,card_id,started_at,ended_at,paused_at,paused_total_sec,mode,on_break,breaks_taken,estimate_snapshot_min'
 
@@ -14,7 +14,7 @@ const asSession = (data: unknown): TimeSession | null => {
 /** user_id is filled by the database default (auth.uid()), and enforced by RLS. */
 const supabaseRepo: BoardRepo = {
   async load() {
-    const [columns, cards, tags, cardTags, links, sessions] = await Promise.all([
+    const [columns, cards, tags, cardTags, links, sessions, maps, mapNodes] = await Promise.all([
       supabase.from('columns').select('id,name,color,position'),
       supabase
         .from('cards')
@@ -24,8 +24,10 @@ const supabaseRepo: BoardRepo = {
       supabase.from('card_tags').select('card_id,tag_id'),
       supabase.from('card_links').select('id,from_card_id,to_card_id,kind'),
       supabase.from('time_sessions').select(SESSION_COLS).order('started_at'),
+      supabase.from('mind_maps').select('id,name,scope'),
+      supabase.from('map_nodes').select('id,map_id,card_id,x,y,label'),
     ])
-    for (const r of [columns, cards, tags, cardTags, links, sessions]) if (r.error) throw r.error
+    for (const r of [columns, cards, tags, cardTags, links, sessions, maps, mapNodes]) if (r.error) throw r.error
     return {
       columns: columns.data ?? [],
       cards: cards.data ?? [],
@@ -33,6 +35,8 @@ const supabaseRepo: BoardRepo = {
       cardTags: cardTags.data ?? [],
       links: (links.data ?? []) as CardLink[],
       sessions: (sessions.data ?? []) as TimeSession[],
+      maps: (maps.data ?? []) as MindMap[],
+      mapNodes: (mapNodes.data ?? []) as MapNode[],
     }
   },
   async createColumn(c) {
@@ -61,6 +65,30 @@ const supabaseRepo: BoardRepo = {
   },
   async createTag(t) {
     const { error } = await supabase.from('tags').insert(t)
+    if (error) throw error
+  },
+  async createLink(l) {
+    const { error } = await supabase.from('card_links').insert(l)
+    if (error) throw error
+  },
+  async updateLinkKind(id, kind) {
+    const { error } = await supabase.from('card_links').update({ kind }).eq('id', id)
+    if (error) throw error
+  },
+  async deleteLink(id) {
+    const { error } = await supabase.from('card_links').delete().eq('id', id)
+    if (error) throw error
+  },
+  async createMap(m) {
+    const { error } = await supabase.from('mind_maps').insert(m)
+    if (error) throw error
+  },
+  async upsertMapNode(n) {
+    const { error } = await supabase.from('map_nodes').upsert(n)
+    if (error) throw error
+  },
+  async deleteMapNode(id) {
+    const { error } = await supabase.from('map_nodes').delete().eq('id', id)
     if (error) throw error
   },
   async serverNow() {
@@ -144,7 +172,18 @@ function rawMemoryRepo(db: BoardData): BoardRepo {
       db.cardTags = db.cardTags.filter((t) => t.card_id !== id)
       db.links = db.links.filter((l) => l.from_card_id !== id && l.to_card_id !== id)
       db.sessions = db.sessions.filter((s) => s.card_id !== id)
+      db.mapNodes = db.mapNodes.filter((n) => n.card_id !== id)
     },
+    createLink: async (l) => void db.links.push(l),
+    updateLinkKind: async (id, kind) => void Object.assign(db.links.find((l) => l.id === id) ?? {}, { kind }),
+    deleteLink: async (id) => void (db.links = db.links.filter((l) => l.id !== id)),
+    createMap: async (m) => void db.maps.push(m),
+    upsertMapNode: async (n) => {
+      const i = db.mapNodes.findIndex((x) => x.id === n.id)
+      if (i >= 0) db.mapNodes[i] = n
+      else db.mapNodes.push(n)
+    },
+    deleteMapNode: async (id) => void (db.mapNodes = db.mapNodes.filter((n) => n.id !== id)),
     serverNow: async () => Date.now(),
     startSession: async (cardId, mode, estimateMin) => {
       const est = estimateMin ?? db.cards.find((c) => c.id === cardId)?.estimate_min ?? null

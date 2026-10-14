@@ -6,6 +6,7 @@ import { useClockSync } from '@/features/timer/useClockSync'
 import { FinishHost } from '@/features/timer/FinishDialog'
 import { FloatHost } from '@/features/timer/FloatHost'
 import { TimerDock } from '@/features/timer/TimerDock'
+import { MindMapPage } from '@/features/mindmap/MindMapPage'
 import { TodayPage } from '@/features/today/TodayPage'
 import { parseHash, useHash } from '@/lib/router'
 import { ComingSoon } from './ComingSoon'
@@ -43,6 +44,8 @@ export function Shell() {
           </>
         ) : route.name === 'today' ? (
           <TodayPage />
+        ) : route.name === 'map' ? (
+          <MindMapPage />
         ) : (
           <ComingSoon name={t(`nav.${route.name}`)} />
         )}

@@ -56,6 +56,22 @@ export interface TimeSession {
   estimate_snapshot_min: number | null
 }
 
+export interface MindMap {
+  id: string
+  name: string
+  scope: string
+}
+
+/** card_id = null means a free node (a note on the map that is not a card). */
+export interface MapNode {
+  id: string
+  map_id: string
+  card_id: string | null
+  x: number
+  y: number
+  label: string | null
+}
+
 export interface BoardData {
   columns: Column[]
   cards: Card[]
@@ -63,6 +79,8 @@ export interface BoardData {
   cardTags: CardTag[]
   links: CardLink[]
   sessions: TimeSession[]
+  maps: MindMap[]
+  mapNodes: MapNode[]
 }
 
 /** Storage boundary. Supabase in production, in-memory when Supabase is not configured. */
@@ -78,6 +96,13 @@ export interface BoardRepo {
   setCardTags(cardId: string, tagIds: string[]): Promise<void>
   /** Make the wikilink rows from this card equal exactly toIds. */
   syncWikiLinks(fromId: string, toIds: string[]): Promise<void>
+  createLink(l: CardLink): Promise<void>
+  updateLinkKind(id: string, kind: LinkKind): Promise<void>
+  deleteLink(id: string): Promise<void>
+  createMap(m: MindMap): Promise<void>
+  /** Insert or replace a map node by id (positions, labels). */
+  upsertMapNode(n: MapNode): Promise<void>
+  deleteMapNode(id: string): Promise<void>
   /** Database clock in epoch ms (client clocks are never trusted for session time). */
   serverNow(): Promise<number>
   /** Each returns the updated session, or null when nothing matched (e.g. pause when none running). */
@@ -89,4 +114,4 @@ export interface BoardRepo {
   finishSession(): Promise<TimeSession | null>
 }
 
-export const emptyBoard = (): BoardData => ({ columns: [], cards: [], tags: [], cardTags: [], links: [], sessions: [] })
+export const emptyBoard = (): BoardData => ({ columns: [], cards: [], tags: [], cardTags: [], links: [], sessions: [], maps: [], mapNodes: [] })

@@ -5,7 +5,7 @@ import { keyAfter, planMove, sorted } from './logic'
 import { repo } from './repo'
 import { doneColumn, todayPositionAt } from '@/features/today/logic'
 import * as ops from '@/features/timer/sessionOps'
-import type { BoardData, Card, CardLink, Column, SessionMode, Tag, TimeSession } from './types'
+import type { BoardData, Card, CardLink, Column, LinkKind, MapNode, MindMap, SessionMode, Tag, TimeSession } from './types'
 
 const KEY = ['board'] as const
 
@@ -126,6 +126,48 @@ export function useBoardActions() {
     )
   }
 
+  // ---- links and the mind map
+  /** Manual or parent link between two cards (text links come from the note, see saveBody). */
+  const addLink = (from: string, to: string, kind: LinkKind = 'manual') => {
+    // Same pair and same kind (either direction) already exists: nothing to add. Also absorbs a doubled gesture.
+    const dup = qc
+      .getQueryData<BoardData>(KEY)
+      ?.links.some((l) => l.kind === kind && ((l.from_card_id === from && l.to_card_id === to) || (l.from_card_id === to && l.to_card_id === from)))
+    if (dup || from === to) return Promise.resolve()
+    const link: CardLink = { id: crypto.randomUUID(), from_card_id: from, to_card_id: to, kind }
+    return run((d) => ({ ...d, links: [...d.links, link] }), () => repo.createLink(link))
+  }
+  const setLinkKind = (ids: string[], kind: LinkKind) =>
+    run((d) => ({ ...d, links: d.links.map((l) => (ids.includes(l.id) ? { ...l, kind } : l)) }), async () => {
+      for (const id of ids) await repo.updateLinkKind(id, kind)
+    })
+  const removeLinks = (ids: string[]) =>
+    run((d) => ({ ...d, links: d.links.filter((l) => !ids.includes(l.id)) }), async () => {
+      for (const id of ids) await repo.deleteLink(id)
+    })
+
+  /** The user's single map, created the first time something is placed on it. */
+  const ensureMap = async (): Promise<MindMap> => {
+    const existing = qc.getQueryData<BoardData>(KEY)?.maps[0]
+    if (existing) return existing
+    const map: MindMap = { id: crypto.randomUUID(), name: 'Map', scope: 'all' }
+    await run((d) => ({ ...d, maps: [...d.maps, map] }), () => repo.createMap(map))
+    return map
+  }
+  const saveMapNode = async (n: Omit<MapNode, 'map_id' | 'id'> & { id?: string }) => {
+    const map = await ensureMap()
+    const d = qc.getQueryData<BoardData>(KEY)
+    const existing = d?.mapNodes.find((m) => (n.card_id ? m.card_id === n.card_id : m.id === n.id))
+    const node: MapNode = { ...n, id: existing?.id ?? n.id ?? crypto.randomUUID(), map_id: map.id }
+    await run(
+      (x) => ({ ...x, mapNodes: [...x.mapNodes.filter((m) => m.id !== node.id), node] }),
+      () => repo.upsertMapNode(node),
+    )
+    return node
+  }
+  const removeMapNode = (id: string) =>
+    run((d) => ({ ...d, mapNodes: d.mapNodes.filter((n) => n.id !== id) }), () => repo.deleteMapNode(id))
+
   // ---- Today
   const setToday = (id: string, on: boolean) => {
     const d = qc.getQueryData<BoardData>(KEY)
@@ -182,7 +224,7 @@ export function useBoardActions() {
       () => repo.setCardTags(cardId, tagIds),
     )
 
-  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags, saveBody, snapshot: () => qc.getQueryData<BoardData>(KEY), setToday, moveToday, setDone, startSession, pauseSession, resumeSession, extendSession, finishSession, setSessionMode }
+  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags, saveBody, snapshot: () => qc.getQueryData<BoardData>(KEY), addLink, setLinkKind, removeLinks, saveMapNode, removeMapNode, setToday, moveToday, setDone, startSession, pauseSession, resumeSession, extendSession, finishSession, setSessionMode }
 }
 
 export const orderedColumns = (d: BoardData) => sorted(d.columns)

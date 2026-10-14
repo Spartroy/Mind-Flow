@@ -125,5 +125,31 @@ Code: `src/features/timer/usePip.ts`, `pip.tsx`, dev page `/#/spike-pip`.
 
 - **Not checked by hand (logic is unit-tested, UI paths are not):** the mobile top bar, Space to pause and Esc to leave, ticking a checklist item in Blitz, Alt+Up/Down and drag reordering on Today, the +2 min break button, the in-page widget finish button, Plan queue reordering.
 
+## Board drag (requested between phases)
+- Cards drag from anywhere on the tile (mouse needs 6px of movement so clicks still open the card; touch uses a 180ms press so scrolling still works; keyboard stays on the grip handle: Space then arrows, or Alt+arrows).
+- **Live preview across columns:** while dragging, the other cards slide apart in whichever column you hover (`dragLists.ts`, 7 tests), instead of only landing on drop. The card under the pointer wins over its column for hit-testing.
+- Smooth motion: 220 ms eased sort transitions, the dragged card lifts (slight rotation and scale, floating shadow) and settles with a 240 ms drop animation; its slot shows a dashed placeholder. Both are off with `prefers-reduced-motion`. A drop on the same spot writes nothing; a move still writes only the moved card.
+- Bug found and fixed on the way: passing a fresh `transition` object to `useSortable` on every render caused an infinite update loop, so it is a module constant now.
+
+## Phase 4: Mind map
+
+**Done** (`/#/map`, `src/features/mindmap/`)
+- Auto-built graph (React Flow + dagre): `[[links]]` thin solid, manual links dashed, parent links thick with an arrow. One edge per pair of cards, drawn as its strongest kind (parent > manual > text link). Layered left-to-right layout for nodes you have not placed.
+- Drag nodes to reposition: saved to `map_nodes` on drop ("Position saved" pill). Saved positions are kept; new cards get laid out around them. **Re-layout** recomputes everything and saves it.
+- Free nodes: "+ Free node" adds a yellow dashed note (double-click to rename; remove from the toolbar or with Delete). Stored as `map_nodes` with `card_id = null`.
+- Draw a link between two cards by dragging from one card's edge handle to another's: creates a manual link (no duplicates). Click an edge to make it manual or parent, swap a parent's direction, or remove it. A link that comes from note text cannot be removed here (the toolbar says so): you add a stronger link beside it instead.
+- Selecting a card highlights its links, dims the rest and shows a preview (title, note excerpt, tags, estimate, Open). Double-click opens the card.
+- Scope: All (cards that have a link, plus any you have placed, plus free nodes), Neighbourhood (the selected card and its direct neighbours), By tag (all cards with the tag, linked or not).
+- Zoom in/out/fit, minimap, legend, empty state ("Your map grows as you link"), light/dark, RTL (the canvas itself stays left-to-right; the page around it mirrors).
+- Keyboard: Tab moves between nodes, Enter selects, Delete removes a free note or a manual/parent link.
+- Tests: 12 graph tests (edges, scopes, layout, saved positions, Arabic), 111 in total.
+
+**Stubbed / not done**
+- The design's "From headings" map mode is not built (not in the original spec). Say if you want it.
+- Not run against real Supabase: `map_nodes` / `mind_maps` / `card_links` writes from the browser. `map_nodes` has no unique key on `(map_id, card_id)` for upserts, so positions are saved by row id (the code reuses the existing row's id).
+- Parent links have no hierarchy view (no tree layout); they are only drawn thicker with an arrow.
+- Not checked by hand: touch dragging on the map, keyboard-only linking (you can select and delete, but not create a link without a mouse), very large maps (performance with hundreds of nodes is untested).
+- Deleting a card removes its map placement (FK cascade).
+
 ## Known issues
 - Production bundle is over 500 kB (no code splitting yet).
