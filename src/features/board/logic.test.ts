@@ -3,7 +3,7 @@ import { filterCards, keyAfter, normalize, planKeyboardMove, planMove, sorted, e
 import type { Card, Column } from './types'
 
 const card = (id: string, column_id: string | null, position: string, extra: Partial<Card> = {}): Card => ({
-  id, title: id, body_md: '', column_id, position, estimate_min: null, is_today: false, due_date: null,
+  id, title: id, body_md: '', column_id, position, estimate_min: null, is_today: false, today_position: null, due_date: null,
   archived_at: null, created_at: '', updated_at: '', ...extra,
 })
 const col = (id: string, position: string): Column => ({ id, name: id, color: 'tag-5', position })

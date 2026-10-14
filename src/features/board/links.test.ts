@@ -3,7 +3,7 @@ import { diffLinks, linkTargets, parseWikiLinks, refreshWikiTitles, sanitizeTitl
 import type { Card } from './types'
 
 const card = (id: string, title: string, extra: Partial<Card> = {}): Card => ({
-  id, title, body_md: '', column_id: 'a', position: 'a0', estimate_min: null, is_today: false, due_date: null,
+  id, title, body_md: '', column_id: 'a', position: 'a0', estimate_min: null, is_today: false, today_position: null, due_date: null,
   archived_at: null, created_at: '', updated_at: '', ...extra,
 })
 const cards = [card('1', 'Networks'), card('2', 'الشبكات'), card('3', 'Cable types'), card('4', 'Cable types')]

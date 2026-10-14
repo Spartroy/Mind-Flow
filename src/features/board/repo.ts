@@ -1,27 +1,38 @@
 import { supabase, supabaseConfigured } from '@/lib/supabase'
+import * as ops from '@/features/timer/sessionOps'
 import { diffLinks } from './links'
-import { emptyBoard, type BoardData, type BoardRepo, type CardLink } from './types'
+import { emptyBoard, type BoardData, type BoardRepo, type CardLink, type TimeSession } from './types'
+
+const SESSION_COLS = 'id,card_id,started_at,ended_at,paused_at,paused_total_sec,mode,on_break,breaks_taken,estimate_snapshot_min'
+
+/** Session rpc results: a composite with no matching row comes back as null or an all-null object. */
+const asSession = (data: unknown): TimeSession | null => {
+  const row = data as TimeSession | null
+  return row && row.id ? row : null
+}
 
 /** user_id is filled by the database default (auth.uid()), and enforced by RLS. */
 const supabaseRepo: BoardRepo = {
   async load() {
-    const [columns, cards, tags, cardTags, links] = await Promise.all([
+    const [columns, cards, tags, cardTags, links, sessions] = await Promise.all([
       supabase.from('columns').select('id,name,color,position'),
       supabase
         .from('cards')
-        .select('id,title,body_md,column_id,position,estimate_min,is_today,due_date,archived_at,created_at,updated_at')
+        .select('id,title,body_md,column_id,position,estimate_min,is_today,today_position,due_date,archived_at,created_at,updated_at')
         .is('archived_at', null),
       supabase.from('tags').select('id,name,color_index'),
       supabase.from('card_tags').select('card_id,tag_id'),
       supabase.from('card_links').select('id,from_card_id,to_card_id,kind'),
+      supabase.from('time_sessions').select(SESSION_COLS).order('started_at'),
     ])
-    for (const r of [columns, cards, tags, cardTags, links]) if (r.error) throw r.error
+    for (const r of [columns, cards, tags, cardTags, links, sessions]) if (r.error) throw r.error
     return {
       columns: columns.data ?? [],
       cards: cards.data ?? [],
       tags: tags.data ?? [],
       cardTags: cardTags.data ?? [],
       links: (links.data ?? []) as CardLink[],
+      sessions: (sessions.data ?? []) as TimeSession[],
     }
   },
   async createColumn(c) {
@@ -51,6 +62,38 @@ const supabaseRepo: BoardRepo = {
   async createTag(t) {
     const { error } = await supabase.from('tags').insert(t)
     if (error) throw error
+  },
+  async serverNow() {
+    const { data, error } = await supabase.rpc('server_now')
+    if (error) throw error
+    return Date.parse(data as string)
+  },
+  async startSession(cardId, mode, estimateMin) {
+    const { data, error } = await supabase.rpc('session_start', { p_card: cardId, p_mode: mode, p_estimate: estimateMin })
+    if (error) throw error
+    const row = asSession(data)
+    if (!row) throw new Error('Session did not start')
+    return row
+  },
+  async pauseSession(onBreak) {
+    const { data, error } = await supabase.rpc('session_pause', { p_break: onBreak })
+    if (error) throw error
+    return asSession(data)
+  },
+  async resumeSession() {
+    const { data, error } = await supabase.rpc('session_resume')
+    if (error) throw error
+    return asSession(data)
+  },
+  async extendSession(minutes) {
+    const { data, error } = await supabase.rpc('session_extend', { p_minutes: minutes })
+    if (error) throw error
+    return asSession(data)
+  },
+  async finishSession() {
+    const { data, error } = await supabase.rpc('session_finish')
+    if (error) throw error
+    return asSession(data)
   },
   async syncWikiLinks(fromId, toIds) {
     const cur = await supabase.from('card_links').select('id,to_card_id').eq('from_card_id', fromId).eq('kind', 'wikilink')
@@ -95,6 +138,34 @@ function rawMemoryRepo(db: BoardData): BoardRepo {
       db.cards = db.cards.filter((c) => c.id !== id)
       db.cardTags = db.cardTags.filter((t) => t.card_id !== id)
       db.links = db.links.filter((l) => l.from_card_id !== id && l.to_card_id !== id)
+      db.sessions = db.sessions.filter((s) => s.card_id !== id)
+    },
+    serverNow: async () => Date.now(),
+    startSession: async (cardId, mode, estimateMin) => {
+      const est = estimateMin ?? db.cards.find((c) => c.id === cardId)?.estimate_min ?? null
+      const r = ops.start(db.sessions, cardId, mode, est, Date.now(), crypto.randomUUID())
+      db.sessions = r.sessions
+      return r.row!
+    },
+    pauseSession: async (onBreak) => {
+      const r = ops.pause(db.sessions, onBreak, Date.now())
+      db.sessions = r.sessions
+      return r.row
+    },
+    resumeSession: async () => {
+      const r = ops.resume(db.sessions, Date.now())
+      db.sessions = r.sessions
+      return r.row
+    },
+    extendSession: async (minutes) => {
+      const r = ops.extend(db.sessions, minutes)
+      db.sessions = r.sessions
+      return r.row
+    },
+    finishSession: async () => {
+      const r = ops.finish(db.sessions, Date.now())
+      db.sessions = r.sessions
+      return r.row
     },
     syncWikiLinks: async (fromId, toIds) => {
       const cur = db.links.filter((l) => l.from_card_id === fromId && l.kind === 'wikilink')
@@ -118,7 +189,7 @@ function memoryRepo(): BoardRepo {
   let db: BoardData = emptyBoard()
   try {
     const raw = sessionStorage.getItem(KEY)
-    if (raw) db = JSON.parse(raw) as BoardData
+    if (raw) db = { ...emptyBoard(), ...(JSON.parse(raw) as BoardData) }
   } catch {
     /* storage unavailable: start empty */
   }

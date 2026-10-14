@@ -10,7 +10,7 @@ import type { Card } from './types'
 
 const card: Card = {
   id: 'c1', title: 'تحضير درس الشبكات Networks', body_md: '', column_id: 'a', position: 'a0',
-  estimate_min: 90, is_today: true, due_date: null, archived_at: null, created_at: '', updated_at: '',
+  estimate_min: 90, is_today: true, today_position: null, due_date: null, archived_at: null, created_at: '', updated_at: '',
 }
 
 describe('CardTile (mixed Arabic/English)', () => {

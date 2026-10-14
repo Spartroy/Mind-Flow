@@ -5,6 +5,7 @@ import { Shell } from '@/app/Shell'
 import { AuthScreen } from '@/features/auth/AuthScreen'
 import { isDemo } from '@/features/board/repo'
 import { SpikePage } from '@/features/editor/SpikePage'
+import { PipSpikePage } from '@/features/timer/PipSpikePage'
 import { supabase } from '@/lib/supabase'
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
   }, [])
 
   if (import.meta.env.DEV && location.hash === '#/spike') return <SpikePage />
+  if (import.meta.env.DEV && location.hash === '#/spike-pip') return <PipSpikePage />
   if (!ready) return null
   if (!isDemo && !session) {
     return (
