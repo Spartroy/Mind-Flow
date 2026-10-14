@@ -1,0 +1,17 @@
+{
+  "app": { "name": "NeuroFlow" },
+  "auth": {
+    "title": "Sign in to NeuroFlow",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "magicLink": "Email me a magic link",
+    "magicSent": "Check your inbox for the sign-in link.",
+    "loading": "Working…",
+    "orSeparator": "or",
+    "errors": { "generic": "Something went wrong. Try again.", "required": "Enter your email and password." }
+  },
+  "settings": { "theme": "Theme", "light": "Light", "dark": "Dark", "system": "System", "direction": "Direction", "language": "Language" },
+  "home": { "signedIn": "Signed in as {{email}}", "signOut": "Sign out", "board": "Board comes in Phase 1." }
+}

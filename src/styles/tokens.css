@@ -1,0 +1,53 @@
+/* Single source of design tokens. Components read these, never raw hex. */
+:root {
+  --font-sans: 'Inter Variable', 'Noto Sans Arabic', system-ui, sans-serif;
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --border-width: 1.5px;
+  --icon-stroke: 2;
+}
+
+.light {
+  color-scheme: light;
+  --bg: #f6f7f6;
+  --surface: #ffffff;
+  --surface-muted: #eef1f0;
+  --border: #d5dbd9;
+  --text: #14201e;
+  --text-muted: #5a6b68;
+  --primary: #0f766e;
+  --primary-hover: #0b5f58;
+  --primary-fg: #ffffff;
+  --sun: #f5b700;
+  --sun-soft: #fff3c4;
+  --coral: #e5533d;
+  --coral-soft: #fde4df;
+  --amber: #d97706;
+  --focus-ring: #0f766e;
+  --danger: #c2331f;
+  --tag-1: #e5533d; --tag-2: #f08c1a; --tag-3: #e0b400; --tag-4: #3fa34d;
+  --tag-5: #0f9aa8; --tag-6: #3b6fe0; --tag-7: #8a4fd6; --tag-8: #d6458f;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0d1514;
+  --surface: #152120;
+  --surface-muted: #1c2c2a;
+  --border: #2b3f3c;
+  --text: #e8f0ee;
+  --text-muted: #9bb0ac;
+  --primary: #2dd4bf;
+  --primary-hover: #5eead4;
+  --primary-fg: #06201c;
+  --sun: #fbc531;
+  --sun-soft: #3a2f0a;
+  --coral: #ff7a64;
+  --coral-soft: #3d1c16;
+  --amber: #f59e0b;
+  --focus-ring: #5eead4;
+  --danger: #ff8a78;
+  --tag-1: #ff7a64; --tag-2: #ffa347; --tag-3: #f2cc3c; --tag-4: #5cc46a;
+  --tag-5: #3cc4d2; --tag-6: #6f96ff; --tag-7: #b184f2; --tag-8: #f06eb0;
+}

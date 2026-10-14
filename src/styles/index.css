@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-fg: var(--text);
+  --color-muted: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-sun: var(--sun);
+  --color-coral: var(--coral);
+  --color-danger: var(--danger);
+  --radius-card: var(--radius-card);
+  --radius-control: var(--radius-control);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.tabular { font-variant-numeric: tabular-nums; }

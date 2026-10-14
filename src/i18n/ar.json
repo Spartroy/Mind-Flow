@@ -1,0 +1,17 @@
+{
+  "app": { "name": "NeuroFlow" },
+  "auth": {
+    "title": "تسجيل الدخول إلى NeuroFlow",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "magicLink": "أرسل لي رابط دخول",
+    "magicSent": "تحقق من بريدك للحصول على رابط الدخول.",
+    "loading": "جارٍ التنفيذ…",
+    "orSeparator": "أو",
+    "errors": { "generic": "حدث خطأ ما. حاول مرة أخرى.", "required": "أدخل البريد الإلكتروني وكلمة المرور." }
+  },
+  "settings": { "theme": "المظهر", "light": "فاتح", "dark": "داكن", "system": "النظام", "direction": "الاتجاه", "language": "اللغة" },
+  "home": { "signedIn": "تم تسجيل الدخول باسم {{email}}", "signOut": "تسجيل الخروج", "board": "اللوحة في المرحلة 1." }
+}
