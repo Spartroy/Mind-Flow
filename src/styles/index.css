@@ -8,15 +8,24 @@
   --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
   --color-fg: var(--text);
+  --color-fg-2: var(--text-2);
   --color-muted: var(--text-muted);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
   --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
   --color-danger: var(--danger);
-  --radius-card: var(--radius-card);
+  --radius-input: var(--radius-input);
   --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
 }
 
 body {
@@ -24,6 +33,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
+  font-size: 14px;
 }
 
 :focus-visible {
@@ -32,3 +42,8 @@ body {
 }
 
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* Respect reduced motion: state changes are instant. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

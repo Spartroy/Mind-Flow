@@ -73,5 +73,78 @@
       "Doing",
       "Done"
     ]
+  },
+  "nav": {
+    "main": "Main navigation",
+    "board": "Board",
+    "today": "Today",
+    "map": "Mind map",
+    "reports": "Reports",
+    "settings": "Settings",
+    "account": "My account",
+    "newCard": "New card",
+    "tags": "Tags",
+    "signOut": "Sign out",
+    "untitled": "Untitled"
+  },
+  "soon": {
+    "body": "{{name}} comes in a later phase."
+  },
+  "boardPage": {
+    "title": "Board",
+    "summary": "{{cards}} cards · {{today}} for today"
+  },
+  "panel": {
+    "label": "Card details",
+    "close": "Close",
+    "more": "More actions",
+    "openAsPage": "Open as full page",
+    "backToPanel": "Open as side panel",
+    "delete": "Delete card",
+    "confirmDelete": "Delete this card permanently?",
+    "blitz": "Blitz",
+    "blitzSoon": "Focus timer arrives in Phase 3",
+    "today": "Today",
+    "column": "Column",
+    "title": "Title",
+    "titlePlaceholder": "Card title",
+    "estimate": "Estimate",
+    "estimateHint": "Use minutes, like 45m",
+    "due": "Due date",
+    "addTag": "Tag",
+    "tagName": "Tag name",
+    "removeTag": "Remove tag {{name}}",
+    "created": "Created {{date}}",
+    "updated": "Updated {{date}}",
+    "today_": "today",
+    "backlinks": "Backlinks",
+    "linked": "Linked cards",
+    "sessions": "Sessions",
+    "noBacklinks": "No card links here yet",
+    "noLinks": "Type [[ in the note to link a card",
+    "noSessions": "No focus sessions yet",
+    "notFound": "This card no longer exists.",
+    "saveFailed": "Could not save: {{message}}"
+  },
+  "editor": {
+    "note": "Note",
+    "placeholder": "Write here. Type [[ to link a card.",
+    "noMatch": "No matching cards",
+    "bold": "Bold",
+    "italic": "Italic",
+    "heading": "Heading",
+    "bulletList": "Bulleted list",
+    "checklist": "Checklist",
+    "link": "Link",
+    "code": "Inline code",
+    "table": "Table",
+    "quote": "Quote",
+    "direction": "Text direction",
+    "auto": "Auto",
+    "ltr": "LTR",
+    "rtl": "RTL",
+    "linkUrl": "Link address",
+    "applyLink": "Apply",
+    "removeLink": "Remove link"
   }
 }

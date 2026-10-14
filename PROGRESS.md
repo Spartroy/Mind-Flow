@@ -40,7 +40,7 @@
 - **Not run against real Supabase** (Docker missing). The Supabase repo code is typechecked but untested, including tag/card_tags writes and RLS from the browser.
 - Search is client-side over loaded cards (fine for 2,000 cards). The Postgres FTS/trgm indexes exist but are not used by the UI yet; wire them in with the command palette in Phase 5.
 - Logged-time chip (turns coral over estimate) needs time sessions: Phase 3. Link-count chip works once links exist (Phase 2).
-- Card editor is a plain dialog; the 60% side panel and Markdown editor are Phase 2.
+- (Done in Phase 2) card editor side panel and Markdown editor.
 - No live cross-column preview while dragging (the card lands on drop). Drag with a filter active places relative to the full column, not just visible cards.
 - Column colour is auto-assigned; no colour picker yet. Column reordering is not implemented.
 - Cannot delete the last column while it has cards.
@@ -65,6 +65,27 @@ Code: `src/features/editor/` (`MarkdownEditor`, `dirAuto.ts`, `wikiLink.ts`, `ed
 - Needs `:has()` and `:dir()`: Chrome 105+, Safari 15.4+, Firefox 121+.
 - Not tested: IME composition, mobile keyboards, Safari/Firefox, copy/paste of mixed text, tables.
 - Vite dev server once served a stale module after two quick edits; touching the file fixed it (dev-only).
+
+## Phase 2: Card detail and editor
+
+**Done**
+- Design export added in `design/` (46 screens, README with token values). Tokens now use the design palette (light and dark), raised primary buttons, Surface 2, soft state colours.
+- App shell from the design: sidebar (New card, Board, Today with count badge, Mind map, Reports, tags with counts that drive the board filter, Settings, account menu with theme/language and sign out). Hash router: `#/board`, `#/today`, `#/map`, `#/reports`, `#/settings`, `#/card/:id` (side panel over the board), `#/cards/:id` (full page). Today, Mind map, Reports and Settings are placeholders until their phases.
+- Card side panel (about 60% width, `<dialog>`: Esc closes, focus trapped, flips to the other side in RTL): column select, Today toggle, Blitz button (disabled until Phase 3), title, estimate field (accepts 45, 45m, 1h30, 1.5h), tags with remove and add (existing or new), due date, created/updated, "More" menu (open as page, delete). Everything autosaves; the note is debounced (700 ms) and flushed on close or navigation.
+- Editor: Tiptap on Markdown. Toolbar: bold, italic, heading, bullet list, checklist, link (inline address field), inline code, table, quote, plus the Auto / LTR / RTL switch. Tables round-trip with Arabic cells.
+- `[[` picker: typing `[[` opens a card list (Arabic-folded search, arrow keys, Enter/Tab, click). Picking inserts a link by id. Clicking a link in the note opens that card.
+- Links: saving a note syncs `card_links(kind='wikilink')`: added links appear, deleted ones go. Renaming a card does not break links; the link text shows the new title next time the note opens. A `[[Title]]` typed without the picker is pinned to the card id when its title matches exactly one card. Links inside code are ignored. Backlinks and linked cards show in the right rail; the board tile link count uses the same data.
+- Verified in the browser (demo mode, Chrome): new card, title, `[[` picker with Arabic card, link insert, autosave, backlink on the target, click-through, rename shows new title in the link, deleting the link text removes the linked-card row, dark + RTL layout.
+- Tests (43 total): link parsing, resolution by id and title, diff, title refresh, code exclusion; estimate parsing; router; table and wikilink round-trips.
+
+**Stubbed / not done**
+- Sessions list in the rail is an empty state until Phase 3. Blitz button is disabled.
+- Not run against real Supabase (Docker still missing): `syncWikiLinks`, `card_links` reads and the new `created_at`/`updated_at` selects are typechecked only.
+- Sidebar is desktop-only (no mobile collapse yet). Search bar and Ctrl+K from the design are Phase 5.
+- In the Arabic UI an empty note shows its placeholder on the left (empty blocks default to LTR until the first strong character).
+- "More" menu has no Archive action (the design shows one): `archived_at` exists, but there is no archive UI or restore yet.
+- Estimate placeholder (45m) looks like a value; consider a lighter style.
+- Demo mode now keeps its data in sessionStorage for the tab so dev reloads do not lose it.
 
 ## Known issues
 - Production bundle is over 500 kB (no code splitting yet).

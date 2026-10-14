@@ -1,16 +1,11 @@
 import { Editor } from '@tiptap/core'
-import { Markdown } from '@tiptap/markdown'
-import { TaskItem } from '@tiptap/extension-task-item'
-import { TaskList } from '@tiptap/extension-task-list'
-import StarterKit from '@tiptap/starter-kit'
 import { describe, expect, it } from 'vitest'
-import { DirAuto } from './dirAuto'
-import { WikiLink } from './wikiLink'
+import { buildExtensions } from './extensions'
 import { SPIKE_SAMPLE } from './SpikePage'
 
 const make = (md: string) =>
   new Editor({
-    extensions: [StarterKit, TaskList, TaskItem.configure({ nested: true }), Markdown, DirAuto, WikiLink],
+    extensions: buildExtensions(),
     content: md,
     contentType: 'markdown',
   })
@@ -59,6 +54,22 @@ describe('Markdown round-trip (Arabic + English)', () => {
     expect(html).toMatch(/<p dir="auto">/)
     expect(html).toMatch(/<h1 dir="auto">/)
     expect(html).not.toMatch(/<(ul|ol|li|blockquote)[^>]*dir=/)
+    e.destroy()
+  })
+
+  it('round-trips tables with Arabic cells', () => {
+    const md = ['| Name | الاسم |', '| --- | --- |', '| LAN | شبكة محلية |', ''].join('\n')
+    const once = roundTrip(md)
+    expect(once).toContain('الاسم')
+    expect(once).toContain('شبكة محلية')
+    expect(roundTrip(once)).toBe(once)
+  })
+
+  it('renders wikilinks with data attributes only (no stray title/id attributes)', () => {
+    const e = make('[[Card title|abc]]')
+    const html = e.getHTML()
+    expect(html).toContain('data-id="abc"')
+    expect(html).not.toMatch(/<span[^>]* (title|id)=/)
     e.destroy()
   })
 })

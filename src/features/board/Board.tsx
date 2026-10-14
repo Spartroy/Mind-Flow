@@ -8,19 +8,30 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CardDialog } from './CardDialog'
 import { CardTile } from './CardTile'
 import { ColumnView } from './ColumnView'
+import { cardHref, navigate } from '@/lib/router'
 import { FilterBar } from './FilterBar'
+import { useFilter } from './filterStore'
 import { orderedColumns, useBoard, useBoardActions } from './hooks'
-import { cardsIn, emptyFilter, filterCards, planKeyboardMove, type Filter, type MoveDir } from './logic'
+import { cardsIn, filterCards, planKeyboardMove, type MoveDir } from './logic'
+
+/** Distinct linked cards per card, counting links in both directions. */
+function linkCountMap(links: { from_card_id: string; to_card_id: string }[]) {
+  const peers = new Map<string, Set<string>>()
+  const add = (a: string, b: string) => (peers.get(a) ?? peers.set(a, new Set()).get(a)!).add(b)
+  for (const l of links) {
+    add(l.from_card_id, l.to_card_id)
+    add(l.to_card_id, l.from_card_id)
+  }
+  return Object.fromEntries([...peers].map(([id, set]) => [id, set.size])) as Record<string, number>
+}
 
 export function Board() {
   const { t } = useTranslation()
   const { data, isPending, error: loadError } = useBoard()
   const act = useBoardActions()
-  const [filter, setFilter] = useState<Filter>(emptyFilter)
-  const [openId, setOpenId] = useState<string | null>(null)
+  const { filter, setFilter } = useFilter()
   const [dragId, setDragId] = useState<string | null>(null)
   const [newColumn, setNewColumn] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -100,7 +111,7 @@ export function Board() {
     safe(act.deleteColumn(id, dest?.id ?? null))
   }
 
-  const openCard = openId ? data.cards.find((c) => c.id === openId) : undefined
+  const linkCounts = linkCountMap(data.links)
   const dragCard = dragId ? data.cards.find((c) => c.id === dragId) : undefined
   const tagsOf = (id: string) =>
     data.cardTags.filter((x) => x.card_id === id).flatMap((x) => data.tags.find((tg) => tg.id === x.tag_id) ?? [])
@@ -134,6 +145,12 @@ export function Board() {
         </div>
       ) : (
         <>
+          <header className="px-4 pt-4">
+            <h1 className="text-3xl font-extrabold">{t('boardPage.title')}</h1>
+            <p className="text-sm text-muted">
+              {t('boardPage.summary', { cards: data.cards.filter((c) => !c.archived_at).length, today: data.cards.filter((c) => c.is_today && !c.archived_at).length })}
+            </p>
+          </header>
           <FilterBar filter={filter} onChange={setFilter} tags={data.tags} />
           <DndContext
             sensors={sensors}
@@ -151,11 +168,11 @@ export function Board() {
                   totalCount={cardsIn(data.cards, col.id).length}
                   tags={data.tags}
                   cardTags={data.cardTags}
-                  linkCounts={data.linkCounts}
-                  onAddCard={(title) => safe(act.addCard(title, col.id))}
+                  linkCounts={linkCounts}
+                  onAddCard={(title) => safe(act.addCard(title, col.id).done)}
                   onRename={(name) => safe(act.updateColumn(col.id, { name }))}
                   onDelete={() => deleteColumn(col.id)}
-                  onOpenCard={setOpenId}
+                  onOpenCard={(id) => navigate(cardHref(id))}
                   onKeyMove={keyMove}
                 />
               ))}
@@ -176,26 +193,12 @@ export function Board() {
               </form>
             </div>
             <DragOverlay>
-              {dragCard && <CardTile overlay card={dragCard} tags={tagsOf(dragCard.id)} linkCount={data.linkCounts[dragCard.id] ?? 0} onOpen={() => {}} onKeyMove={() => {}} />}
+              {dragCard && <CardTile overlay card={dragCard} tags={tagsOf(dragCard.id)} linkCount={linkCounts[dragCard.id] ?? 0} onOpen={() => {}} onKeyMove={() => {}} />}
             </DragOverlay>
           </DndContext>
         </>
       )}
 
-      {openCard && (
-        <CardDialog
-          key={openCard.id}
-          card={openCard}
-          data={data}
-          onClose={() => setOpenId(null)}
-          onSave={(patch, tagIds) => {
-            safe(act.updateCard(openCard.id, patch))
-            safe(act.setCardTags(openCard.id, tagIds))
-          }}
-          onDelete={() => safe(act.deleteCard(openCard.id))}
-          onCreateTag={act.createTag}
-        />
-      )}
     </div>
   )
 }

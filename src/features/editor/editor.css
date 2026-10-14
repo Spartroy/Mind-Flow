@@ -91,3 +91,44 @@
   cursor: pointer;
 }
 .nf-editor .nf-wikilink.ProseMirror-selectednode { outline: 2px solid var(--focus-ring); }
+
+/* Tables */
+.nf-editor .ProseMirror table { border-collapse: collapse; margin-block: 0.5rem; width: 100%; table-layout: fixed; }
+.nf-editor .ProseMirror th,
+.nf-editor .ProseMirror td {
+  border: 1.5px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  vertical-align: top;
+  text-align: start;
+}
+.nf-editor .ProseMirror th { background: var(--surface-muted); font-weight: 700; }
+.nf-editor .ProseMirror td > p, .nf-editor .ProseMirror th > p { margin: 0; }
+
+/* [[ picker (rendered into <body>, so not nested under .nf-editor) */
+.nf-suggest {
+  position: fixed;
+  z-index: 1000;
+  min-width: 16rem;
+  max-width: 24rem;
+  padding: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-floating);
+  font-size: 14px;
+}
+.nf-suggest-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  text-align: start;
+}
+.nf-suggest-item span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nf-suggest-item small { color: var(--text-muted); flex: none; }
+.nf-suggest-item[aria-selected='true'] { background: var(--primary-soft); color: var(--primary); }
+.nf-suggest-empty { padding: 0.5rem 0.6rem; color: var(--text-muted); }

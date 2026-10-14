@@ -6,7 +6,7 @@ export function Input({ className, dir = 'auto', ...props }: InputHTMLAttributes
     <input
       dir={dir}
       className={cn(
-        'w-full rounded-control border-[1.5px] border-border bg-surface px-3 py-2 text-start text-sm text-fg placeholder:text-muted',
+        'w-full rounded-input border-[1.5px] border-border bg-surface px-3 py-2 text-start text-sm text-fg placeholder:text-muted',
         className,
       )}
       {...props}

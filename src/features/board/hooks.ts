@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { linkTargets } from './links'
 import { keyAfter, planMove, sorted } from './logic'
 import { repo } from './repo'
-import type { BoardData, Card, Column, Tag } from './types'
+import type { BoardData, Card, CardLink, Column, Tag } from './types'
 
 const KEY = ['board'] as const
 
@@ -64,12 +65,14 @@ export function useBoardActions() {
     const card: Card = {
       id: crypto.randomUUID(), title, body_md: '', column_id: columnId, position: keyAfter(cards),
       estimate_min: null, is_today: false, due_date: null, archived_at: null,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }
-    return run((d) => ({ ...d, cards: [...d.cards, card] }), () => repo.createCard(card))
+    // id is known immediately so callers can navigate before the write finishes.
+    return { id: card.id, done: run((d) => ({ ...d, cards: [...d.cards, card] }), () => repo.createCard(card)) }
   }
 
   const updateCard = (id: string, patch: Partial<Omit<Card, 'id'>>) =>
-    run((d) => ({ ...d, cards: d.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) }), () =>
+    run((d) => ({ ...d, cards: d.cards.map((c) => (c.id === id ? { ...c, ...patch, updated_at: new Date().toISOString() } : c)) }), () =>
       repo.updateCard(id, patch),
     )
 
@@ -79,6 +82,7 @@ export function useBoardActions() {
         ...d,
         cards: d.cards.filter((c) => c.id !== id),
         cardTags: d.cardTags.filter((t) => t.card_id !== id),
+        links: d.links.filter((l) => l.from_card_id !== id && l.to_card_id !== id),
       }),
       () => repo.deleteCard(id),
     )
@@ -96,6 +100,30 @@ export function useBoardActions() {
     return tag
   }
 
+  /** Save the note and keep wikilink rows in step with its text (one optimistic update). */
+  const saveBody = async (cardId: string, body_md: string) => {
+    const d = qc.getQueryData<BoardData>(KEY)
+    if (!d) return
+    const targets = linkTargets(body_md, d.cards, cardId)
+    const isMine = (l: CardLink) => l.from_card_id === cardId && l.kind === 'wikilink'
+    const next = targets.map(
+      (to) =>
+        d.links.find((l) => isMine(l) && l.to_card_id === to) ??
+        ({ id: crypto.randomUUID(), from_card_id: cardId, to_card_id: to, kind: 'wikilink' } as CardLink),
+    )
+    await run(
+      (x) => ({
+        ...x,
+        links: [...x.links.filter((l) => !isMine(l)), ...next],
+        cards: x.cards.map((c) => (c.id === cardId ? { ...c, body_md, updated_at: new Date().toISOString() } : c)),
+      }),
+      async () => {
+        await repo.updateCard(cardId, { body_md })
+        await repo.syncWikiLinks(cardId, targets)
+      },
+    )
+  }
+
   const setCardTags = (cardId: string, tagIds: string[]) =>
     run(
       (d) => ({
@@ -105,7 +133,7 @@ export function useBoardActions() {
       () => repo.setCardTags(cardId, tagIds),
     )
 
-  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags }
+  return { addColumn, addStarterColumns, updateColumn, deleteColumn, addCard, updateCard, deleteCard, moveCard, createTag, setCardTags, saveBody, snapshot: () => qc.getQueryData<BoardData>(KEY) }
 }
 
 export const orderedColumns = (d: BoardData) => sorted(d.columns)
